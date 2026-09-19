@@ -45,6 +45,19 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 - Six generated files added to the sample corpus, which the round-trip sweep
   now covers (66 files to 72): three remittances and three claim submissions,
   the latter covering the subscriber branch, the dependent branch and a mix.
+- **`x12sdk.denials`** — denial analytics over 835 remittance advice.
+  `iter_adjustments()` flattens every CAS adjustment (claim level and service
+  line, all six reason positions per segment) into one record per reason code
+  with the claim, line and remark-code context attached.
+  `denial_summary()` aggregates by payer, adjustment group and reason code,
+  counting payer-side groups (`CO`, `OA`, `PI`) by default and distinct claims
+  rather than occurrences. Amounts stay `Decimal` throughout, so totals are
+  exact. `to_dataframe()` is available with the new `pandas` extra.
+- `categorize()` groups reason codes into analysis categories (eligibility,
+  authorization, duplicate, timely filing, coordination of benefits and
+  others). **No X12/WPC code-list text ships with x12sdk** — the descriptions
+  are licensed separately. `load_code_descriptions()` reads a list you supply,
+  and a test guards against that text being vendored in future.
 
 ### Fixed
 - `Loop2010Ba.ref_segment` (837P and 837I) and `Loop2000A.loop_2000b` (271)
