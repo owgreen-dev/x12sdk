@@ -4,8 +4,9 @@ test_create_parser.py
 Tests the parser creation function.
 """
 import pytest
-from linuxforhealth.x12.parsing import create_parser
-from linuxforhealth.x12.models import X12Delimiters
+
+from x12sdk.models import X12Delimiters
+from x12sdk.parsing import create_parser
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,8 @@
-import pytest
 from typing import Callable, Dict
-from linuxforhealth.x12.parsing import X12ParserContext, match
+
+import pytest
+
+from x12sdk.parsing import X12ParserContext, match
 
 
 @pytest.fixture

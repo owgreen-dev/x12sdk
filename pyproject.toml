@@ -1,22 +1,84 @@
 [build-system]
-requires = [
-    "setuptools>-42",
-    "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.black]
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
+[project]
+name = "x12sdk"
+description = "Typed Pydantic models and a streaming SDK/CLI for HIPAA ASC X12 5010 health care transactions (837P, 837I, 835, 834, 270, 271, 276, 277)."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "owgreen-dev" }]
+keywords = ["x12", "edi", "hipaa", "837", "835", "834", "270", "271", "276", "277", "claims", "pydantic"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Developers",
+    "Topic :: Office/Business :: Financial",
+    "Typing :: Typed",
+]
+# Pydantic v2 migration is in progress; the pin moves to >=2,<3 when it lands.
+dependencies = [
+    "pydantic>=1.10,<2",
+    "python-dotenv>=0.19.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.1",
+    "pytest-cov>=4.0",
+    "ruff>=0.6",
+    "pre-commit>=2.14",
+    "hypothesis>=6",
+]
+
+[project.urls]
+Homepage = "https://github.com/owgreen-dev/x12sdk"
+Repository = "https://github.com/owgreen-dev/x12sdk"
+Issues = "https://github.com/owgreen-dev/x12sdk/issues"
+Changelog = "https://github.com/owgreen-dev/x12sdk/blob/main/CHANGELOG.md"
+"Upstream (LinuxForHealth x12)" = "https://github.com/LinuxForHealth/x12"
+
+[project.scripts]
+x12sdk = "x12sdk.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["x12sdk*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "x12sdk.__version__" }
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
 line-length = 88
-target-version = ['py38']
-include = '\.pyi?$'
-exclude = '''
-(
-  /(
-    | \.git
-    | \.pytest_cache
-  )/
-)
-'''
+target-version = "py310"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+# E501: inherited code was formatted by black at 88 columns with long
+# docstrings/descriptions; line length is enforced by the formatter instead.
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# The 5010 segment tests deliberately star-import every segment model.
+"src/tests/test_5010_segments.py" = ["F403", "F405"]
+
+[tool.coverage.run]
+source = ["x12sdk"]

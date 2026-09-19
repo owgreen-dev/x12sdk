@@ -3,11 +3,12 @@ test_encoding.py
 
 Tests the X12 Custom JSON Encoder
 """
-from linuxforhealth.x12.encoding import X12JsonEncoder
-from decimal import Decimal
-import uuid
-import json
 import datetime
+import json
+import uuid
+from decimal import Decimal
+
+from x12sdk.encoding import X12JsonEncoder
 
 
 def test_encoding():

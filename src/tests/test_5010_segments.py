@@ -3,9 +3,10 @@ test_5010_segments.py
 
 Tests the Pydantic X12 segment models
 """
-from linuxforhealth.x12.v5010.segments import *
 from decimal import Decimal
-from linuxforhealth.x12.models import X12Delimiters
+
+from x12sdk.models import X12Delimiters
+from x12sdk.v5010.segments import *
 
 
 def test_aaa_segment():

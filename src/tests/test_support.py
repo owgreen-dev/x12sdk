@@ -3,18 +3,20 @@ test_support.py
 
 Tests support functions.
 """
-import pytest
 import datetime
-from linuxforhealth.x12.support import (
+
+import pytest
+
+from x12sdk.io import X12ModelReader
+from x12sdk.support import (
+    count_segments,
+    get_latest_implementation_version,
     is_x12_data,
     is_x12_file,
-    parse_x12_date,
     parse_interchange_date,
-    count_segments,
+    parse_x12_date,
     parse_x12_major_version,
-    get_latest_implementation_version,
 )
-from linuxforhealth.x12.io import X12ModelReader
 
 
 @pytest.mark.parametrize(

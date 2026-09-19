@@ -1,185 +1,141 @@
-# LinuxForHealth x12
+# x12sdk
 
-![GitHub License](https://img.shields.io/github/license/LinuxForHealth/x12)
-![Supported Versions](https://img.shields.io/badge/python%20version-3.8%2C%203.9-blue)
-<br>
-![Template CI](https://github.com/LinuxForHealth/x12/actions/workflows/continuous-integration.yml/badge.svg)
-<br>
-![GitHub Issues](https://img.shields.io/github/issues/LinuxForHealth/x12)
-![GitHub Forks](https://img.shields.io/github/forks/LinuxForHealth/x12)
-![GitHub Stars](https://img.shields.io/github/stars/LinuxForHealth/x12)
+Typed [Pydantic](https://docs.pydantic.dev/) models and a streaming SDK/CLI for
+HIPAA ASC X12 5010 health care transactions.
 
+![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
+![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
 
-LinuxForHealth x12 streams ASC 5010 X12 health care transactions into [Pydantic Models](https://pydantic-docs.helpmanual.io/)  for a pleasant pythonic parsing experience! Integration options include REST endpoints, CLI (command line), or direct access using the Python SDK.
+> **Status: pre-1.0.** x12sdk is the maintained continuation of
+> [LinuxForHealth x12](https://github.com/LinuxForHealth/x12), which stopped
+> at 0.57.0 in June 2022. The first x12sdk release will ship once the
+> Pydantic v2 port is complete. Until then, install from source.
 
-Supported formats include:
-* 005010X212 Claim Status
-* 005010X221 Claim Payment
-* 005010X222 Professional Claim
-* 05010X223 Institutional Claim
-* 005010X279 Eligibility
-* 005010X220 Enrollment and Maintenance
+Supported transaction sets:
 
-## Quickstart
+| Set | Implementation | What it is |
+|---|---|---|
+| 837P | 005010X222A2 | Professional claim |
+| 837I | 005010X223A3 | Institutional claim |
+| 835 | 005010X221A1 | Claim payment / remittance advice |
+| 834 | 005010X220A1 | Benefit enrollment and maintenance |
+| 270 / 271 | 005010X279A1 | Eligibility inquiry / response |
+| 276 / 277 | 005010X212 | Claim status inquiry / response |
 
-### Pre-requisites
-The LinuxForHealth X12 development environment relies on the following software packages:
+Every transaction is parsed into a validated Pydantic model and can be
+serialized back to X12; the test suite asserts that round trip reproduces
+each sample file byte for byte.
 
-- [git](https://git-scm.com) for project version control
-- [Python 3.8 or higher](https://www.python.org/downloads/) for runtime/coding support
+## Install
 
-### Project Setup and Validation
 ```shell
-pip install --upgrade pip setuptools
-
-git clone https://github.com/LinuxForHealth/x12
-cd x12
-
-python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip setuptools 
-pip install -e .[dev, api] # installs dev packages and optional API endpoint
-pytest
+git clone https://github.com/owgreen-dev/x12sdk
+cd x12sdk
+python3 -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip
+pip install -e .
 ```
 
-### SDK
+## SDK
 
-The X12 SDK provides an `io` package which supports streaming X12 segments or transaction models. Segment
-streaming parses each segment into a list containing the fields. Model streaming validates the X12 payload, and returns
-one or transaction models from the X12 message.
+The `x12sdk.io` module streams either raw segments or validated transaction
+models from a file.
 
+Stream segments (each segment becomes its name plus a list of fields):
 
-To stream segments, create a X12SegmentReader instance: 
 ```python
-from linuxforhealth.x12.io import X12SegmentReader
+from x12sdk.io import X12SegmentReader
 
 with X12SegmentReader("/home/edi/270.x12") as r:
-    # return the segment name and field list
     for segment_name, segment_fields in r.segments():
-        print(segment_name)
-        print(segment_fields)
+        print(segment_name, segment_fields)
 ```
 
-To stream models, create a X12ModelReader instance:
+Stream models (the payload is validated; one model per transaction set):
+
 ```python
-from linuxforhealth.x12.io import X12ModelReader
+from x12sdk.io import X12ModelReader
 
 with X12ModelReader("/home/edi/270.x12") as r:
     for model in r.models():
-        # common model attributes include "header" and "footer"
-        print(model.header)
+        print(model.header)   # common attributes: header, footer
         print(model.footer)
-        
-        # to convert back to X12
-        model.x12()
+        model.x12()           # serialize back to X12
 ```
 
-### CLI
-The X12 CLI parses a X12 input file and returns either a list of X12 segments, or a list of X12 models based on the provided options.
+## CLI
 
-To view help information
 ```shell
-user@mbp x12 % source venv/bin/activate
-(venv) user@mbp x12 % lfhx12 --help
-usage: LinuxForHealth X12 [-h] [-s | -m] [-x] [-p] file
+x12sdk --help
+usage: x12sdk [-h] [-s | -m] [-x] [-p] [-d] file
 
-The LinuxForHealth X12 CLI parses and validates X12 messages.
+The x12sdk CLI parses and validates X12 messages.
 Messages are returned in JSON format in either a segment or transactional format.
 
 positional arguments:
-  file           The path to a ASC X12 file
+  file              The path to a ASC X12 file
 
-optional arguments:
-  -h, --help     show this help message and exit
-  -s, --segment  Returns X12 segments
-  -m, --model    Returns X12 models
-  -x, --exclude  Exclude fields set to None in model output
-  -p, --pretty   Pretty print output
+options:
+  -h, --help        show this help message and exit
+  -s, --segment     Returns X12 segments
+  -m, --model       Returns X12 models
+  -x, --exclude     Exclude fields set to None in model output
+  -p, --pretty      Pretty print output
+  -d, --delimiters  Include X12 delimiters in output (model mode only)
 ```
-
-To parse a X12 message into segments with pretty printing enabled
-```shell
-(venv) user@mbp x12 % lfhx12 -s -p demo-file/demo.270
-[
-    {
-        "ISA00": "ISA",
-        "ISA01": "03",
-        "ISA02": "9876543210",
-<etc, etc>
-```
-
-To parse a X12 message into models with pretty printing enabled
-```shell
-(venv) user@mbp x12 % lfhx12 -m -p demo-file/demo.270
-[
-    {
-        "header": {
-            "st_segment": {
-                "delimiters": {
-                    "element_separator": "*",
-                    "repetition_separator": "^",
-                    "segment_terminator": "~",
-                    "component_separator": ":"
-                },
-                "segment_name": "ST",
-                "transaction_set_identifier_code": "270",
-                "transaction_set_control_number": "0001",
-                "implementation_convention_reference": "005010X279A1"
-            },
-            "bht_segment": {
-              <etc, etc>
-```
-
-In "model" mode, the `-x` option excludes `None` values from output.
-
-### API
-LinuxForHealth X12 includes an experimental "api" setup "extra" which activates a [Fast API](https://fastapi.tiangolo.com/) 
-endpoint used to submit X12 payloads.
 
 ```shell
-user@mbp x12 % source venv/bin/activate
-(venv) user@mbp x12 % pip install -e ".[api]"
-(venv) user@mbp x12 % lfhx12-api
+x12sdk -s -p demo-file/demo.270   # segments
+x12sdk -m -p demo-file/demo.270   # models
 ```
-Browse to http://localhost:5000/docs to view the Open API UI.
 
-API server configurations are located in the [config module](./src/linuxforhealth/x12/config.py). The `X12ApiConfig` model
-is a [Pydantic Settings Model](https://pydantic-docs.helpmanual.io/usage/settings/) which can be configured using environment
-variables.
+## Migrating from `linuxforhealth-x12`
+
+| before | after |
+|---|---|
+| `pip install linuxforhealth-x12` | `pip install x12sdk` |
+| `from linuxforhealth.x12.io import X12ModelReader` | `from x12sdk.io import X12ModelReader` |
+| `lfhx12 -m -p file.x12` | `x12sdk -m -p file.x12` |
+| `lfhx12-api` (FastAPI endpoint) | removed; wrap the SDK in your own service |
+
+See [CHANGELOG.md](CHANGELOG.md) for everything that changed.
+
+## Development
 
 ```shell
-user@mbp x12 % source venv/bin/activate
-(venv) user@mbp x12 % export X12_UVICORN_PORT=5002
-(venv) user@mbp x12 % lfhx12-api
+pip install -e ".[dev]"
+ruff check src
+pytest --cov
 ```
 
-### Code Formatting
+Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) (Apache-2.0,
+DCO sign-off, no copyrighted standards text, no real PHI). To add a
+transaction set, see [repo-docs/NEW_TRANSACTION.md](repo-docs/NEW_TRANSACTION.md);
+the design is described in [repo-docs/DESIGN.md](repo-docs/DESIGN.md).
 
-LinuxForHealth X12 adheres to the [Black Code Style and Convention](https://black.readthedocs.io/en/stable/index.html)
+## Provenance and related work
 
-The following command executes the black formatter with default options
+x12sdk is a fork of **[LinuxForHealth x12](https://github.com/LinuxForHealth/x12)**
+by Dixon Whitmire and the LinuxForHealth contributors (IBM), released under
+the Apache License 2.0. The models, parser, readers, and test corpus
+originate there; x12sdk exists to keep that work usable on current Python
+and Pydantic. The original LICENSE is retained, and attribution and
+trademark notes are in [NOTICE](NOTICE) and [TRADEMARK.md](TRADEMARK.md).
+x12sdk is not affiliated with or endorsed by IBM, LinuxForHealth, or the
+Linux Foundation.
 
-```shell
-user@mbp x12 % source venv/bin/activate
-(venv) user@mbp x12 % black ./src
-```
+- **[MdClarity/x12](https://github.com/MdClarity/x12)** — an independent
+  fork by MD Clarity (Cary Lee) that completed a Pydantic v2 migration and
+  added type checking and fuzzing in 2026. x12sdk's port is written
+  separately from the 2022 upstream; their work is acknowledged here and
+  their fixes are welcome upstream in x12sdk.
+- **[pyx12](https://github.com/azoner/pyx12)** — the long-standing Python X12
+  validator/converter (XML/dict output, map-driven). Choose pyx12 for
+  validation against X12 maps; choose x12sdk for typed Python models.
+- **[edi-835-parser](https://github.com/keiron-stoddart/edi-835-parser)** —
+  a popular 835-only parser with pandas output.
 
-Use the `--help` flag to view all available options for the black code formatter
+## License
 
-```shell
-(venv) user@mbp x12 % black --help
-```
-
-## Building The Project
-LinuxForHealth X12 is aligned, to a degree, with the PEP-517 standard. `setup.cfg` stores build metadata/configuration.
-`pyproject.toml` contains the build toolchain specification and black formatter configurations.
-
-The commands below creates a source and wheel distribution within a clean build environment.
-
-```shell
-python3 -m venv build-venv && source build-venv/bin/activate && pip install --upgrade pip setuptools build wheel twine
-python3 -m build --no-isolation
-```
-
-## Additional Resources
-- [Design Overview](repo-docs/DESIGN.md)
-- [New Transaction Support](repo-docs/NEW_TRANSACTION.md)
-- [Container Support](repo-docs/CONTAINER_SUPPORT.md)
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

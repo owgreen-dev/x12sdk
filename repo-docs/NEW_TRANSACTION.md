@@ -1,6 +1,6 @@
 # New Transaction Set Guide
 
-This guide documents the process used to add a new transaction set to LinuxForHealth x12. Please review this guide and
+This guide documents the process used to add a new transaction set to x12sdk. Please review this guide and
 the implementation within the `x12_270_005010X279A1` transaction set before adding a new transaction.
 
 ## Add Transaction Package
@@ -169,7 +169,7 @@ class EligibilityInquiry(X12SegmentGroup):
 
 ## Add Loop Parsing Functions
 
-LinuxForHealth x12 decouples segment parsing from segment iteration/io. 
+x12sdk decouples segment parsing from segment iteration/io. 
 
 Each parsing module includes parsing functions which are used to create loop containers within the transaction set
 data record. Loop parsing functions use the `match` decorator to identify the loop's first segment and provide additional

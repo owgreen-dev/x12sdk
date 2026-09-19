@@ -2,9 +2,11 @@
 Tests use-cases for the 270 005010X279A1 (Eligibility Inquiry) transaction
 """
 
-import pytest
-from tests.support import assert_eq_model, resources_directory
 import os
+
+import pytest
+
+from tests.support import assert_eq_model, resources_directory
 
 
 @pytest.fixture

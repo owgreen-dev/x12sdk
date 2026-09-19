@@ -1,10 +1,10 @@
 """
-Tests LinuxForHealth X12SegmentReader
+Tests X12SegmentReader
 """
 import pytest
 
-import linuxforhealth.x12.io
-from linuxforhealth.x12.io import X12SegmentReader
+import x12sdk.io
+from x12sdk.io import X12SegmentReader
 
 
 @pytest.mark.parametrize(
@@ -75,7 +75,6 @@ def test_segments_with_file_path(request, tmpdir, test_input: str):
 
     with X12SegmentReader(f) as r:
         segment_count = 0
-        version_key = None
 
         assert r.delimiters.component_separator == ":"
         assert r.delimiters.element_separator == "*"
@@ -135,7 +134,7 @@ def test_large_x12_message(monkeypatch, large_x12_message, config):
         return config
 
     with monkeypatch.context() as m:
-        m.setattr(linuxforhealth.x12.io, "get_config", mock_get_config)
+        m.setattr(x12sdk.io, "get_config", mock_get_config)
 
         segment_counter = 0
         with X12SegmentReader(large_x12_message) as r:

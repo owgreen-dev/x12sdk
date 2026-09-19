@@ -3,8 +3,9 @@ support.py
 
 Reusable assertions and utilities for X12 based test cases
 """
-from linuxforhealth.x12.io import X12ModelReader
 import os
+
+from x12sdk.io import X12ModelReader
 
 # base resource directory for "file fixtures" (sample x12 transactions)
 resources_directory = os.path.join(
@@ -22,7 +23,7 @@ def assert_eq_model(x12_path: str):
     :param x12_path: The path to a X12 file
     """
     with open(x12_path) as f:
-        x12_data = "".join([l for l in f.readlines() if l])
+        x12_data = "".join([line for line in f.readlines() if line])
 
         with X12ModelReader(x12_data) as r:
 

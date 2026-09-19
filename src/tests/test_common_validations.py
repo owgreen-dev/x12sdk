@@ -3,8 +3,9 @@ test_common_validations.py
 
 Tests common validations that are shared across X12 transaction sets.
 """
-from linuxforhealth.x12.io import X12ModelReader
 import pytest
+
+from x12sdk.io import X12ModelReader
 
 
 def test_segment_footer_count(simple_270_with_new_lines):

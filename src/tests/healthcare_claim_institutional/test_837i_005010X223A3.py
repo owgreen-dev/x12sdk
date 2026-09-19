@@ -1,9 +1,11 @@
 """
 test_837_005010XX223A3.py
 """
-import pytest
-from tests.support import assert_eq_model, resources_directory
 import os
+
+import pytest
+
+from tests.support import assert_eq_model, resources_directory
 
 
 @pytest.fixture

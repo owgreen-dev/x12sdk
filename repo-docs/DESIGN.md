@@ -1,6 +1,6 @@
-# LinuxForHealth x12 Design Overview
+# x12sdk Design Overview
 
-LinuxForHealth x12 parses and validates ASC X12 health care transactions. At the core of the x12 application is
+x12sdk parses and validates ASC X12 health care transactions. At the core of the x12 application is
 its data model. The data model aligns with the ASC X12 specifications and supports its primary concepts including
 fields, segments, loops, and transactions.
 
@@ -14,7 +14,7 @@ Loops consist of segments.
 Transaction sets consist of loops.
 
 ### ASC X12 Fields and Data Types
-A field represents a single data attribute with a scalar type. The table below illustrates how LinuxForHealth x12 maps
+A field represents a single data attribute with a scalar type. The table below illustrates how x12sdk maps
 ASC X12 data types to Python's type system.
 
 | ASC X12 Data Type | Python Type   |
@@ -115,12 +115,12 @@ ISA*03*9876543210*01*9876543210*30*000000005      *30*12345          *131031*114
 | component separator    | 104                   | :                        |
 | segment terminator     | 105                   | ~                        |
 
-## LinuxForHealth x12 Data Model
+## x12sdk Data Model
 
-The LinuxForHealth x12 data models extend [pydantic](https://pydantic-docs.helpmanual.io/usage/models) 's BaseModel
+The x12sdk data models extend [pydantic](https://pydantic-docs.helpmanual.io/usage/models) 's BaseModel
 implementation. 
 
-The LinuxForHealth x12 data model version aligns with X12 versioning. The [5010](./src/x12/v5010) version is current,
+The x12sdk data model version aligns with X12 versioning. The [5010](./src/x12/v5010) version is current,
 with [4010](./src/x12/v4010) provided for historical use. Each version utilizes an identical module structure. Using the
 v5010 version as an example, models used include:
 
@@ -206,7 +206,7 @@ a `x12` method which generates valid x12 from its contained segments.
 
 ### Data Model Validation
 
-The LinuxForHealth X12 Data Model supports broad and granular validations expressed at the transaction set, loop, segment,
+The x12sdk Data Model supports broad and granular validations expressed at the transaction set, loop, segment,
 and field level with Pydantic's `@root_validator` and `@validator` functions. 
 
 Pydantic's `post` validation behavior is used for each validation process to streamline implementations. An additional

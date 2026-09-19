@@ -1,0 +1,24 @@
+x12sdk
+Copyright 2026 the x12sdk authors
+
+This product is derived from LinuxForHealth x12
+(https://github.com/LinuxForHealth/x12), Copyright the LinuxForHealth x12
+authors (IBM Corporation and contributors), licensed under the Apache
+License, Version 2.0. The original LICENSE file is retained in this
+repository unchanged.
+
+Modifications: in September 2026 every source file under src/ was relocated
+from the `linuxforhealth.x12` namespace to `x12sdk` and subsequently
+modified; the experimental FastAPI endpoint and container tooling were
+removed; packaging was moved to pyproject.toml. CHANGELOG.md records the
+history of changes made in x12sdk.
+
+x12sdk is an independent project. It is not affiliated with, sponsored by,
+or endorsed by IBM, LinuxForHealth, Merative, or the Linux Foundation.
+"LinuxForHealth" and "IBM" are marks of their respective owners; "Linux" is
+a registered trademark of Linus Torvalds. See TRADEMARK.md.
+
+ASC X12 is a registered trademark of the Accredited Standards Committee X12.
+This software implements the structure of X12 transactions in code; it does
+not reproduce X12 implementation guides (TR3s) or X12/WPC code-list
+descriptive text, which are separately licensed by their publishers.
