@@ -33,7 +33,8 @@ class HealthCareClaimPayment(X12SegmentGroup):
         """
         numbers: Set = set()
         for loop in values.get("loop_2000", []):
-            n: int = loop.lx_segment.assigned_number
+            # LX01 is kept as text to preserve leading zeros; compare values
+            n: int = int(loop.lx_segment.assigned_number)
             if n in numbers:
                 raise ValueError(f"duplicate assigned_numbers {n}")
             numbers.add(n)

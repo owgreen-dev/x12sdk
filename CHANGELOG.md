@@ -15,6 +15,25 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 - Minimum Python is now 3.10 (was 3.8).
 - Adopted ruff for linting.
 
+### Fixed
+- 834: the member coverage provider information loop (LX, loop 2310) raised
+  `TypeError` because the parser tested loop membership on the parser
+  context instead of the coverage record. The `enroll-employee-managed-care`
+  sample now parses.
+- `LxSegment.assigned_number` (LX01, an N0 element) is now the digit string
+  from the transaction instead of an `int`, so values written with leading
+  zeros (`LX*01`) serialize back unchanged. Call `int()` where a number is
+  needed. The 835 duplicate-line check compares numeric values, so `01` and
+  `1` are still treated as the same line number.
+- Corrected the `enroll-employee-managed-care.834` sample: its member-level
+  `DTP*358` is not a valid loop 2000 date qualifier; the sibling enrollment
+  sample's `356` (eligibility begin) is used.
+
+### Added
+- `test_resource_roundtrip.py`: every sample under `src/tests/resources/`
+  (61 files) must parse, validate, and serialize back byte for byte.
+  Upstream exercised only a subset of the samples.
+
 ### Removed
 - The experimental FastAPI endpoint (`lfhx12-api`, `x12.api`,
   `X12ApiConfig`), its `api` extra, and the Dockerfile / container tooling.

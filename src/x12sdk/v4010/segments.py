@@ -11,7 +11,15 @@ from decimal import Decimal
 from enum import Enum
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
-from pydantic import Field, PositiveInt, condecimal, conint, root_validator, validator
+from pydantic import (
+    Field,
+    PositiveInt,
+    condecimal,
+    conint,
+    constr,
+    root_validator,
+    validator,
+)
 
 from x12sdk.models import X12Segment, X12SegmentName
 from x12sdk.support import (
@@ -1885,7 +1893,10 @@ class LxSegment(X12Segment):
     """
 
     segment_name: X12SegmentName = X12SegmentName.LX
-    assigned_number: conint(gt=0)
+    # LX01 (DE 554) is an N0 element. It is kept as the digit string that
+    # appeared in the transaction so that values such as "01" round-trip
+    # byte-for-byte; use int() when a number is needed.
+    assigned_number: constr(regex=r"^\d{1,6}$")
 
 
 class MeaSegment(X12Segment):
