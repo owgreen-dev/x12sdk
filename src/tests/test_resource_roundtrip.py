@@ -9,6 +9,7 @@ specific tests exercise individual samples; this module guarantees that no
 sample is silently left out and that any regression in serialization fidelity
 is reported per file.
 """
+
 import os
 
 import pytest

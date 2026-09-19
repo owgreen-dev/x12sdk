@@ -3,6 +3,7 @@ conftest.py
 
 Pytest Global Fixtures
 """
+
 import pytest
 
 from x12sdk.config import X12Config

@@ -3,6 +3,7 @@ models.py
 
 Base models for X12 parsing and validation.
 """
+
 import abc
 import datetime
 from decimal import Decimal

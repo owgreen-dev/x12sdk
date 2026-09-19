@@ -3,6 +3,7 @@ support.py
 
 Reusable assertions and utilities for X12 based test cases
 """
+
 import os
 
 from x12sdk.io import X12ModelReader
@@ -26,7 +27,6 @@ def assert_eq_model(x12_path: str):
         x12_data = "".join([line for line in f.readlines() if line])
 
         with X12ModelReader(x12_data) as r:
-
             segment_terminator = r._x12_segment_reader.delimiters.segment_terminator
             segments = [
                 s for s in x12_data.split(segment_terminator) if s and s != "\n"

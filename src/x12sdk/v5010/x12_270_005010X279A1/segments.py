@@ -3,6 +3,7 @@ segments.py
 
 Specialized segment models for the Eligibility 270 005010X279A1 transaction.
 """
+
 from enum import Enum
 from typing import List, Literal, Optional
 

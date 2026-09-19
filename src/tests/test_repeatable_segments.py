@@ -6,6 +6,7 @@ pre-seed a list. Before the fix, the first occurrence failed model validation
 (a dict where a list was declared) and any further occurrence was silently
 dropped by the parser.
 """
+
 import os
 
 import pytest
@@ -89,9 +90,9 @@ def test_4010_home_health_care_plan_loop_is_parsed(relative_path):
     assert len(loops) == 1
     loop_2305 = loops[0]
     assert loop_2305.cr7_segment.discipline_type_code == "AI"
-    assert [(h.quantity_qualifier, h.measurement_code) for h in loop_2305.hsd_segment] == [
-        ("VS", "WK")
-    ]
+    assert [
+        (h.quantity_qualifier, h.measurement_code) for h in loop_2305.hsd_segment
+    ] == [("VS", "WK")]
 
 
 @pytest.mark.parametrize(

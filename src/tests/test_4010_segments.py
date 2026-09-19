@@ -3,6 +3,7 @@ test_4010_segments.py
 
 Tests the Pydantic X12 segment models specific to the 4010 specification
 """
+
 from x12sdk.v4010.segments import Cr5Segment, Cr6Segment, Cr7Segment
 
 

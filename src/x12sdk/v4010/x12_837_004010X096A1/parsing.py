@@ -233,7 +233,6 @@ def set_subscriber_name_loop(context: X12ParserContext, segment_data: Dict) -> N
     """
 
     if context.loop_name == TransactionLoops.SUBSCRIBER:
-
         if TransactionLoops.SUBSCRIBER_NAME not in context.subscriber_record:
             context.subscriber_record[TransactionLoops.SUBSCRIBER_NAME] = {
                 "ref_segment": []
@@ -278,7 +277,6 @@ def set_subscriber_payer_name_loop(
     :param segment_data: The current segment data
     """
     if "2010b" in context.loop_name:
-
         if TransactionLoops.SUBSCRIBER_PAYER_NAME not in context.subscriber_record:
             context.subscriber_record[TransactionLoops.SUBSCRIBER_PAYER_NAME] = {
                 "ref_segment": []
@@ -495,9 +493,7 @@ def set_other_subscriber_entities_loop(
             )
         elif identifier == "71":
             # loop 2330d
-            loop_name = (
-                TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_ATTENDING_PROVIDER_NAME
-            )
+            loop_name = TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_ATTENDING_PROVIDER_NAME
         elif identifier == "72":
             # loop 2330e
             loop_name = (
@@ -510,9 +506,7 @@ def set_other_subscriber_entities_loop(
             )
         elif identifier == "FA":
             # loop 2330h
-            loop_name = (
-                TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_SERVICE_FACILITY_LOCATION
-            )
+            loop_name = TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_SERVICE_FACILITY_LOCATION
 
         if not loop_name:
             raise ValueError(

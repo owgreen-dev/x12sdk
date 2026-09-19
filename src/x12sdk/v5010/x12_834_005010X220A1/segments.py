@@ -3,6 +3,7 @@ segments.py
 
 Specialized segment models for the Enrollment 834 005010X220A1 transaction.
 """
+
 from enum import Enum
 from typing import Literal, Optional
 

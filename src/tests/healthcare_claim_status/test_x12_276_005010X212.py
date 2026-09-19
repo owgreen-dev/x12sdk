@@ -3,6 +3,7 @@ test_x12_276_005010X212.py
 
 Tests the Health Care Claim Status Request Transaction
 """
+
 import os
 
 import pytest

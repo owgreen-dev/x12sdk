@@ -3,6 +3,7 @@ test_common_validations.py
 
 Tests common validations that are shared across X12 transaction sets.
 """
+
 import pytest
 
 from x12sdk.io import X12ModelReader

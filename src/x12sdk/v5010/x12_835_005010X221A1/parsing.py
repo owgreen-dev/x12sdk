@@ -8,6 +8,7 @@ as segments are streamed to the transactional data model.
 
 Loop parsing functions are implemented as set_[description]_loop(context: X12ParserContext, segment_data: Dict).
 """
+
 from enum import Enum
 from typing import Dict
 

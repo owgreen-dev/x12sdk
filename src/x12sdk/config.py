@@ -3,6 +3,7 @@ config.py
 
 x12sdk configuration settings and specification/format "constants"
 """
+
 from enum import IntEnum
 from functools import lru_cache
 

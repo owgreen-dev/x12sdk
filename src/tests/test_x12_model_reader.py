@@ -3,6 +3,7 @@ test_x12_model_reader.py
 
 Supports general model streaming tests validating the number of models returned, expected payload, etc.
 """
+
 from typing import Dict, List
 
 import pytest

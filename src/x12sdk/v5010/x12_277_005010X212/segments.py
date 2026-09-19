@@ -3,6 +3,7 @@ segments.py
 
 Specialized segment models for the Health Care Claim Status Response 277 005010X212 transaction.
 """
+
 import datetime
 from decimal import Decimal
 from enum import Enum

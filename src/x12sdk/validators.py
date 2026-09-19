@@ -11,6 +11,7 @@ Field validators support a varying signature:
     - (cls, v, values, config) - where "config" is the model config
     - (cls, kwargs) - provides a key word arguments shorthand for the above parameters
 """
+
 from collections import defaultdict
 from datetime import datetime
 from typing import Dict, Union

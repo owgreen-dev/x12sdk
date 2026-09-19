@@ -3,6 +3,7 @@ test_encoding.py
 
 Tests the X12 Custom JSON Encoder
 """
+
 import datetime
 import json
 import uuid

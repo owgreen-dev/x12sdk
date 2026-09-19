@@ -3,6 +3,7 @@ test_834_005010X220A1.py
 
 Tests the benefit enrollment (834) transaction
 """
+
 import os
 
 import pytest

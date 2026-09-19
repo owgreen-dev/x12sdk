@@ -1,6 +1,7 @@
 """
 Tests X12SegmentReader
 """
+
 import pytest
 
 import x12sdk.io

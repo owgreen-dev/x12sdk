@@ -3,6 +3,7 @@ transaction_set.py
 
 Defines the Health Care Claims Status 276 005010X212 transaction set model.
 """
+
 from typing import List
 
 from pydantic import Field, root_validator

@@ -3,6 +3,7 @@ test_5010_segments.py
 
 Tests the Pydantic X12 segment models
 """
+
 from decimal import Decimal
 
 from x12sdk.models import X12Delimiters

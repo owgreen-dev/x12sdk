@@ -207,7 +207,6 @@ class BprSegment(X12Segment):
             "receiver_account_qualifier",
             "receiver_account_number",
         ):
-
             if not values.get(f):
                 raise ValueError(f"{f} is required for electronic transactions")
 
@@ -830,9 +829,10 @@ class DmgSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        date_fields: Tuple = values.get(
-            "date_time_period_format_qualifier"
-        ), values.get("date_time_period")
+        date_fields: Tuple = (
+            values.get("date_time_period_format_qualifier"),
+            values.get("date_time_period"),
+        )
 
         if any(date_fields) and not all(date_fields):
             raise ValueError(
@@ -1275,8 +1275,9 @@ class EbSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        quantity_fields: Tuple = values.get("quantity_qualifier"), values.get(
-            "quantity"
+        quantity_fields: Tuple = (
+            values.get("quantity_qualifier"),
+            values.get("quantity"),
         )
 
         if any(quantity_fields) and not all(quantity_fields):
@@ -1306,8 +1307,9 @@ class EqSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        reference_fields: Tuple = values.get("service_type_code"), values.get(
-            "medical_procedure_id"
+        reference_fields: Tuple = (
+            values.get("service_type_code"),
+            values.get("medical_procedure_id"),
         )
 
         if not any(reference_fields):
@@ -1621,8 +1623,9 @@ class HsdSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        quantity_fields: Tuple = values.get("quantity_qualifier"), values.get(
-            "quantity"
+        quantity_fields: Tuple = (
+            values.get("quantity_qualifier"),
+            values.get("quantity"),
         )
 
         if not any(quantity_fields):
@@ -1681,8 +1684,9 @@ class IiiSegment(X12Segment):
 
         :param values: The validated model values.
         """
-        industry_codes = values.get("code_list_qualifier_code"), values.get(
-            "industry_code"
+        industry_codes = (
+            values.get("code_list_qualifier_code"),
+            values.get("industry_code"),
         )
         if any(industry_codes) and not all(industry_codes):
             raise ValueError("Industry codes require a qualifier and value")
@@ -1745,9 +1749,10 @@ class InsSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        date_fields: Tuple = values.get(
-            "date_time_period_format_qualifier"
-        ), values.get("member_death_date")
+        date_fields: Tuple = (
+            values.get("date_time_period_format_qualifier"),
+            values.get("member_death_date"),
+        )
 
         if any(date_fields) and not all(date_fields):
             raise ValueError(
@@ -2136,8 +2141,9 @@ class MpiSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        date_fields: Tuple = values.get("date_time_format_qualifier"), values.get(
-            "date_time_period"
+        date_fields: Tuple = (
+            values.get("date_time_format_qualifier"),
+            values.get("date_time_period"),
         )
 
         if any(date_fields) and not all(date_fields):
@@ -2204,8 +2210,9 @@ class N4Segment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        state_fields: Tuple = values.get("state_province_code"), values.get(
-            "country_subdivision_code"
+        state_fields: Tuple = (
+            values.get("state_province_code"),
+            values.get("country_subdivision_code"),
         )
 
         if all(state_fields):
@@ -2250,8 +2257,9 @@ class Nm1Segment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        id_fields: Tuple = values.get("identification_code_qualifier"), values.get(
-            "identification_code"
+        id_fields: Tuple = (
+            values.get("identification_code_qualifier"),
+            values.get("identification_code"),
         )
 
         if any(id_fields) and not all(id_fields):
@@ -2372,9 +2380,10 @@ class PatSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        date_fields: Tuple = values.get(
-            "date_time_period_format_qualifier"
-        ), values.get("patient_death_date")
+        date_fields: Tuple = (
+            values.get("date_time_period_format_qualifier"),
+            values.get("patient_death_date"),
+        )
 
         if any(date_fields) and not all(date_fields):
             raise ValueError(
@@ -2391,8 +2400,9 @@ class PatSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        weight_fields: Tuple = values.get("unit_basis_measurement_code"), values.get(
-            "patient_weight"
+        weight_fields: Tuple = (
+            values.get("unit_basis_measurement_code"),
+            values.get("patient_weight"),
         )
 
         if any(weight_fields) and not all(weight_fields):
@@ -2425,16 +2435,18 @@ class PerSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        communication_fields: Tuple = values.get(
-            "communication_number_qualifier_2"
-        ), values.get("communication_number_2")
+        communication_fields: Tuple = (
+            values.get("communication_number_qualifier_2"),
+            values.get("communication_number_2"),
+        )
 
         if any(communication_fields) and not all(communication_fields):
             raise ValueError("communication fields require a qualifier and number")
 
-        communication_fields = values.get(
-            "communication_number_qualifier_3"
-        ), values.get("communication_number_3")
+        communication_fields = (
+            values.get("communication_number_qualifier_3"),
+            values.get("communication_number_3"),
+        )
 
         if any(communication_fields) and not all(communication_fields):
             raise ValueError("communication fields require a qualifier and number")
@@ -2487,9 +2499,10 @@ class PrvSegment(X12Segment):
 
         :param values: The raw, unvalidated transaction data.
         """
-        reference_fields: Tuple = values.get(
-            "reference_identification_qualifier"
-        ), values.get("reference_identification")
+        reference_fields: Tuple = (
+            values.get("reference_identification_qualifier"),
+            values.get("reference_identification"),
+        )
 
         if any(reference_fields) and not all(reference_fields):
             raise ValueError(

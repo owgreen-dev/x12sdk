@@ -45,6 +45,7 @@ The HealthCare Claims Institutional set organizes loops into a hierarchical and 
 The Header and Footer components are not "loops" per the specification, but are included to standardize and simplify
 transactional modeling and processing.
 """
+
 from decimal import Decimal
 from typing import Dict, List, Optional
 

@@ -16,6 +16,7 @@ The check is package-level: the set of list-typed segment fields declared in
 somewhere in ``parsing.py``. That is a lower bound (a key seeded for one loop
 satisfies the check for another), which is why the runtime safety nets exist.
 """
+
 import importlib
 import inspect
 import pkgutil

@@ -3,6 +3,7 @@ support.py
 
 Convenience functions for X12 Processing.
 """
+
 import datetime
 import functools
 import os
@@ -88,7 +89,7 @@ def is_x12_file(file_path: str) -> bool:
     if not os.path.exists(expanded_path) or os.path.isdir(expanded_path):
         return False
 
-    with (open(expanded_path, "r")) as f:
+    with open(expanded_path, "r") as f:
         f.seek(0)
         # ISA segment is first 106 characters
         isa_segment = f.read(IsaDelimiters.SEGMENT_LENGTH)

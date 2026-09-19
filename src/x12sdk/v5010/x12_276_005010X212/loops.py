@@ -24,6 +24,7 @@ The Health Care Claim Status Request organizes loops into a hierarchical and nes
 The Subscriber and Dependent Claim Status and Service Line Loops share segment classes as the data structures
 are identical.
 """
+
 from typing import List, Optional
 
 from pydantic import Field

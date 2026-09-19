@@ -1,6 +1,7 @@
 """
 Tests use-cases for the 271 005010X279A1 (Eligibility Benefit Response) transaction
 """
+
 import os
 
 import pytest
