@@ -4,12 +4,15 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
-## Unreleased (1.0.0.dev0)
+## 1.0.0 — 2026-09-19
+
+First release of x12sdk, continuing [LinuxForHealth x12](https://github.com/LinuxForHealth/x12)
+from its final 0.57.0 (June 2022).
 
 ### Changed
 - **Migrated to Pydantic v2** (`pydantic>=2,<3`, plus `pydantic-settings`).
   Closes the upstream request in LinuxForHealth/x12#141. The round-trip oracle
-  over all 67 sample files passes unchanged, so parsing and serialization
+  over all 66 sample files passes unchanged, so parsing and serialization
   behaviour is preserved. What this means if you use the models directly:
   - Model methods follow v2 names: `model_dump()` / `model_validate()` rather
     than `dict()` / `parse_obj()`, and `model_fields` rather than `__fields__`.

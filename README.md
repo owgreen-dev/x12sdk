@@ -7,10 +7,9 @@ for HIPAA ASC X12 5010 health care transactions.
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
 
-> **Status: pre-1.0.** x12sdk is the maintained continuation of
-> [LinuxForHealth x12](https://github.com/LinuxForHealth/x12), which stopped
-> at 0.57.0 in June 2022. It now runs on **Pydantic v2 and Python 3.10–3.13**.
-> A 1.0 release to PyPI follows; until then, install from source.
+> x12sdk is the maintained continuation of
+> [LinuxForHealth x12](https://github.com/LinuxForHealth/x12), which stopped at
+> 0.57.0 in June 2022. It runs on **Pydantic v2 and Python 3.10–3.13**.
 
 Supported transaction sets:
 
@@ -28,6 +27,12 @@ serialized back to X12; the test suite asserts that round trip reproduces
 each sample file byte for byte.
 
 ## Install
+
+```shell
+pip install x12sdk
+```
+
+From source:
 
 ```shell
 git clone https://github.com/owgreen-dev/x12sdk
