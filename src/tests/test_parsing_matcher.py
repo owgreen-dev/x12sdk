@@ -8,7 +8,7 @@ from x12sdk.parsing import X12ParserContext, match
 @pytest.fixture
 def segment_data(x12_delimiters) -> Dict:
     return {
-        "delimiters": x12_delimiters.dict(),
+        "delimiters": x12_delimiters.model_dump(),
         "segment_name": "ST",
         "transaction_set_identifier_code": "270",
         "transaction_set_control_number": "0001",

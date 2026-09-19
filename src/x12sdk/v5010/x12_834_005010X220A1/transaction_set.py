@@ -21,8 +21,8 @@ class BenefitEnrollmentAndMaintenance(X12SegmentGroup):
     header: Header
     loop_1000a: Loop1000A
     loop_1000b: Loop1000B
-    loop_1000c: Optional[List[Loop1000C]] = Field(max_items=2)
+    loop_1000c: Optional[List[Loop1000C]] = Field(None, max_length=2)
     loop_2000: List[Loop2000]
     footer: Footer
 
-    # _validate_segment_count = root_validator(allow_reuse=True)(validate_segment_count)
+    # _validate_segment_count = model_validator(mode="after")(validate_segment_count)

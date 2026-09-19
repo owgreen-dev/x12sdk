@@ -24,9 +24,9 @@ classifiers = [
     "Topic :: Office/Business :: Financial",
     "Typing :: Typed",
 ]
-# Pydantic v2 migration is in progress; the pin moves to >=2,<3 when it lands.
 dependencies = [
-    "pydantic>=1.10,<2",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2",
     "python-dotenv>=0.19.0",
 ]
 dynamic = ["version"]

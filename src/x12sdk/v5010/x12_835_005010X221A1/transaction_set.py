@@ -6,7 +6,7 @@ Defines the Health Care Claims Payment 835 005010X221A1 transaction set model.
 
 from typing import List, Set
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from x12sdk.models import X12SegmentGroup
 from x12sdk.validators import validate_segment_count
@@ -25,13 +25,14 @@ class HealthCareClaimPayment(X12SegmentGroup):
     loop_2000: List[Loop2000]
     footer: Footer
 
-    _validate_segment_count = root_validator(allow_reuse=True)(validate_segment_count)
+    _validate_segment_count = model_validator(mode="after")(validate_segment_count)
 
-    @root_validator()
-    def validate_lx_header(cls, values):
+    @model_validator(mode="after")
+    def validate_lx_header(self):
         """
         Validates that LX numbers within a transaction set are unique.
         """
+        values = self.__dict__
         numbers: Set = set()
         for loop in values.get("loop_2000", []):
             # LX01 is kept as text to preserve leading zeros; compare values
@@ -40,4 +41,4 @@ class HealthCareClaimPayment(X12SegmentGroup):
                 raise ValueError(f"duplicate assigned_numbers {n}")
             numbers.add(n)
 
-        return values
+        return self

@@ -63,7 +63,7 @@ def test_271_information_source_provider_is_parsed():
 
 def _find_loops(group: X12SegmentGroup, field_name: str):
     """Yields every populated ``field_name`` value found anywhere under ``group``."""
-    for name, field in group.__fields__.items():
+    for name, field in type(group).model_fields.items():
         value = getattr(group, name)
         if value is None:
             continue
@@ -118,7 +118,7 @@ def test_segment_group_wraps_single_dict_for_list_field():
     from x12sdk.v5010.segments import NteSegment
 
     class Notes(X12SegmentGroup):
-        nte_segment: List[NteSegment] = Field(min_items=1)
+        nte_segment: List[NteSegment] = Field(min_length=1)
 
     group = Notes(nte_segment={"note_reference_code": "ADD", "description": "x"})
     assert len(group.nte_segment) == 1

@@ -8,10 +8,36 @@ import abc
 import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional
+from typing import Any, List, Optional, get_args, get_origin
 
-from pydantic import BaseModel, Field, root_validator
-from pydantic.fields import SHAPE_LIST
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+def _field_type(annotation: Any) -> Any:
+    """
+    Returns the model/scalar type an annotation ultimately refers to.
+
+    ``Optional[List[Loop2300]]`` -> ``Loop2300``, ``str`` -> ``str``. Used in
+    place of Pydantic v1's ``ModelField.type_``.
+    """
+    while True:
+        args = [a for a in get_args(annotation) if a is not type(None)]
+        if not args:
+            return annotation
+        annotation = args[0]
+
+
+def _is_list_field(annotation: Any) -> bool:
+    """
+    True when an annotation declares a list, including ``Optional[List[T]]``.
+
+    Replaces Pydantic v1's ``ModelField.shape == SHAPE_LIST``.
+    """
+    if get_origin(annotation) is list:
+        return True
+    return any(
+        get_origin(arg) is list for arg in get_args(annotation) if arg is not type(None)
+    )
 
 
 class X12Delimiters(BaseModel):
@@ -23,11 +49,8 @@ class X12Delimiters(BaseModel):
     repetition_separator: str = Field("^", min_length=1, max_length=1)
     segment_terminator: str = Field("~", min_length=1, max_length=1)
     component_separator: str = Field(":", min_length=1, max_length=1)
-
-    class Config:
-        # the model is immutable and hashable
-        allow_mutation = False
-        frozen = True
+    # the model is immutable and hashable
+    model_config = ConfigDict(frozen=True)
 
 
 class X12SegmentName(str, Enum):
@@ -127,14 +150,7 @@ class X12Segment(abc.ABC, BaseModel):
 
     delimiters: Optional[X12Delimiters] = None
     segment_name: X12SegmentName
-
-    class Config:
-        """
-        Default configuration for X12 Models
-        """
-
-        use_enum_values = True
-        extra = "forbid"
+    model_config = ConfigDict(use_enum_values=True, extra="forbid")
 
     def _process_multivalue_field(
         self,
@@ -157,9 +173,8 @@ class X12Segment(abc.ABC, BaseModel):
         """
 
         delimiters = custom_delimiters or X12Delimiters()
-        is_component_field: bool = self.__fields__[field_name].field_info.extra.get(
-            "is_component", False
-        )
+        extra = type(self).model_fields[field_name].json_schema_extra or {}
+        is_component_field: bool = extra.get("is_component", False)
         if is_component_field:
             join_character = delimiters.component_separator
         else:
@@ -178,7 +193,7 @@ class X12Segment(abc.ABC, BaseModel):
 
         delimiters = custom_delimiters or X12Delimiters()
         x12_values = []
-        for k, v in self.dict(exclude={"delimiters"}).items():
+        for k, v in self.model_dump(exclude={"delimiters"}).items():
             if isinstance(v, str):
                 x12_values.append(v)
             elif isinstance(v, list):
@@ -211,7 +226,8 @@ class X12SegmentGroup(abc.ABC, BaseModel):
     Abstract base class for a container, typically a loop or transaction, which groups x12 segments.
     """
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def _wrap_single_repeatable_segments(cls, values):
         """
         Accepts a single segment record where the model declares a list.
@@ -221,14 +237,11 @@ class X12SegmentGroup(abc.ABC, BaseModel):
         misses a repeatable segment, the model would otherwise reject a bare
         dict for a ``List[...]`` field. Wrapping it here keeps a missed
         pre-seed from being a validation failure.
-
-        Pydantic v2 port: this becomes ``@model_validator(mode="before")`` and
-        the field shape check uses ``get_origin(field.annotation) is list``.
         """
         if not isinstance(values, dict):
             return values
-        for name, field in cls.__fields__.items():
-            if field.shape != SHAPE_LIST:
+        for name, field in cls.model_fields.items():
+            if not _is_list_field(field.annotation):
                 continue
             value = values.get(name)
             if isinstance(value, dict):
@@ -250,10 +263,14 @@ class X12SegmentGroup(abc.ABC, BaseModel):
         """
         delimiters = custom_delimiters or X12Delimiters()
         x12_segments: List[str] = []
-        fields = [f for f in self.__fields__.values() if hasattr(f.type_, "x12")]
+        fields = [
+            name
+            for name, field in type(self).model_fields.items()
+            if hasattr(_field_type(field.annotation), "x12")
+        ]
 
-        for f in fields:
-            field_instance = getattr(self, f.name)
+        for field_name in fields:
+            field_instance = getattr(self, field_name)
 
             if field_instance is None:
                 continue

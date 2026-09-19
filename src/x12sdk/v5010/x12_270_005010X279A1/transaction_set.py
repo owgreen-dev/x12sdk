@@ -6,7 +6,7 @@ Defines the Eligibility 270 005010X279A1 transaction set model.
 
 from typing import Dict, List, Tuple
 
-from pydantic import root_validator
+from pydantic import model_validator
 
 from x12sdk.models import X12SegmentGroup
 from x12sdk.validators import validate_segment_count
@@ -23,15 +23,16 @@ class EligibilityInquiry(X12SegmentGroup):
     loop_2000a: List[Loop2000A]
     footer: Footer
 
-    _validate_segment_count = root_validator(allow_reuse=True)(validate_segment_count)
+    _validate_segment_count = model_validator(mode="after")(validate_segment_count)
 
-    @root_validator
-    def validate_subscriber_name(cls, values):
+    @model_validator(mode="after")
+    def validate_subscriber_name(self):
         """
         Validates that the subscriber mame is present if the subscriber is a patient
 
         :param values: The raw, unvalidated transaction data.
         """
+        values = self.__dict__
         for info_source in values.get("loop_2000a", []):
             for info_receiver in info_source.loop_2000b:
                 for subscriber in info_receiver.loop_2000c:
@@ -43,15 +44,16 @@ class EligibilityInquiry(X12SegmentGroup):
                             "name_first is required when the subscriber is the patient"
                         )
 
-        return values
+        return self
 
-    @root_validator
-    def validate_subscriber_hierarchy_child_code(cls, values):
+    @model_validator(mode="after")
+    def validate_subscriber_hierarchy_child_code(self):
         """
         Validates that a subscriber's hierarchy child code is set correctly based on the presence of a dependent loop.
 
         :param values: The raw, unvalidated transaction data.
         """
+        values = self.__dict__
         for info_source in values.get("loop_2000a", []):
             for info_receiver in info_source.loop_2000b:
                 for subscriber in info_receiver.loop_2000c:
@@ -61,16 +63,17 @@ class EligibilityInquiry(X12SegmentGroup):
                         raise ValueError(
                             f"Invalid subscriber hierarchy code {child_code} no dependent record is present"
                         )
-        return values
+        return self
 
-    @root_validator
-    def validate_hierarchy_ids(cls, values):
+    @model_validator(mode="after")
+    def validate_hierarchy_ids(self):
         """
         Validates the HL segments linkage in regards to the entire EligibilityInquiry transaction.
         Validations are limited to checks that are not covered within a segment or field scope.
 
         :param values: The raw, unvalidated transaction data.
         """
+        values = self.__dict__
 
         def get_ids(hl_segment: Dict) -> Tuple[int, int]:
             """returns tuple of (id, parent_id)"""
@@ -131,4 +134,4 @@ class EligibilityInquiry(X12SegmentGroup):
                             )
 
                         previous_id = dependent_id
-        return values
+        return self

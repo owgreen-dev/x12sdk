@@ -104,7 +104,7 @@ def _parse_models(
         models = []
 
         for m in r.models():
-            model_data = m.dict(**export_params)
+            model_data = m.model_dump(**export_params)
             models.append(model_data)
         return models
 

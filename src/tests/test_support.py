@@ -81,7 +81,7 @@ def test_parse_x12_date():
 def test_count_segments(simple_270_with_new_lines):
     with X12ModelReader(simple_270_with_new_lines) as r:
         model = [m for m in r.models()][0]
-        model_data = model.dict()
+        model_data = model.model_dump()
         segment_count: int = count_segments(model_data)
         assert segment_count == 17
 

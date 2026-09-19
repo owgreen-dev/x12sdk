@@ -4,10 +4,11 @@ validators.py
 Common/shared validators which may be reused in transaction sets.
 """
 
-from pydantic import validator
+from pydantic import field_validator
 
 
-@validator("hierarchical_parent_id_number", allow_reuse=True)
+@field_validator("hierarchical_parent_id_number")
+@classmethod
 def validate_hl_parent_id(cls, field_value):
     """
     Validates the top level HL segment to ensure that the segment does not have a parent id.

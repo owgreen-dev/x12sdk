@@ -525,7 +525,7 @@ def test_lui_segment():
 
 
 def test_lx_segment():
-    segment_data = {"assigned_number": 1}
+    segment_data = {"assigned_number": "1"}
     lx_segment: LxSegment = LxSegment(**segment_data)
     assert lx_segment.x12() == "LX*1~"
 
