@@ -58,6 +58,10 @@ zip-safe = false
 where = ["src"]
 include = ["x12sdk*"]
 
+# PEP 561: ship the marker so type checkers use the package's annotations.
+[tool.setuptools.package-data]
+x12sdk = ["py.typed"]
+
 [tool.setuptools.dynamic]
 version = { attr = "x12sdk.__version__" }
 
