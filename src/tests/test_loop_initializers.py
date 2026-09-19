@@ -26,7 +26,7 @@ import pytest
 
 import x12sdk.v4010 as v4010
 import x12sdk.v5010 as v5010
-from x12sdk.models import X12SegmentGroup
+from x12sdk.models import X12SegmentGroup, _is_list_field
 
 PRESEED_PATTERN = re.compile(r'"(\w+_segment)":\s*\[\]')
 
@@ -49,8 +49,8 @@ def _list_segment_fields(package_name: str) -> set:
         for _, cls in inspect.getmembers(module, inspect.isclass):
             if not issubclass(cls, X12SegmentGroup) or cls is X12SegmentGroup:
                 continue
-            for name, field in cls.__fields__.items():
-                if name.endswith("_segment") and field.outer_type_ is not field.type_:
+            for name, field in cls.model_fields.items():
+                if name.endswith("_segment") and _is_list_field(field.annotation):
                     # a container (List[...]) rather than a bare segment
                     fields.add(name)
     return fields

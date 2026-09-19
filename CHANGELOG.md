@@ -7,6 +7,30 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 ## Unreleased (1.0.0.dev0)
 
 ### Changed
+- **Migrated to Pydantic v2** (`pydantic>=2,<3`, plus `pydantic-settings`).
+  Closes the upstream request in LinuxForHealth/x12#141. The round-trip oracle
+  over all 67 sample files passes unchanged, so parsing and serialization
+  behaviour is preserved. What this means if you use the models directly:
+  - Model methods follow v2 names: `model_dump()` / `model_validate()` rather
+    than `dict()` / `parse_obj()`, and `model_fields` rather than `__fields__`.
+  - `Optional[...]` fields now carry an explicit `None` default, so they stay
+    optional under v2 rules.
+  - Cross-field checks are `@model_validator(mode="after")` and receive the
+    model instance; per-field checks are `@field_validator` and take
+    `info: ValidationInfo` when they need other fields.
+  - Date fields that the parser resolves to a `date`/`datetime` now declare
+    that in their annotations (previously some claimed `str` only).
+  - `x12.api` / the `api` extra remain removed (see below), and
+    `pydantic.BaseSettings` moved to `pydantic-settings`.
+
+### Fixed (during the v2 port)
+- `IdcSegment.identification_card_count` was declared
+  `Optional[int] = conint(gt=0)`, which put a *type* in the default slot
+  instead of constraining the field. It is now
+  `Optional[Annotated[int, Field(gt=0)]] = None`, so the bound is enforced.
+  Serialized output is unchanged.
+- `Cr5Segment.segment_name` in the 4010 module overrode a base field without a
+  type annotation, which v2 rejects outright.
 - Renamed the package and import namespace from `linuxforhealth.x12` to
   `x12sdk`; the CLI command is now `x12sdk` (was `lfhx12`).
 - Moved packaging from `setup.cfg` to `pyproject.toml` (`[project]`);

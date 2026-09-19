@@ -24,7 +24,7 @@ from x12sdk.v5010.segments import (
 
 class HeaderStSegment(StSegment):
     transaction_set_identifier_code: Literal["835"]
-    implementation_convention_reference: Optional[str]
+    implementation_convention_reference: Optional[str] = None
 
 
 class HeaderTrnSegment(TrnSegment):
@@ -73,7 +73,7 @@ class Loop1000AN1Segment(N1Segment):
     """
 
     entity_identifier_code: Literal["PR"]
-    identification_code_qualifier: Optional[Literal["XV"]]
+    identification_code_qualifier: Optional[Literal["XV"]] = None
 
 
 class Loop1000ARefSegment(RefSegment):

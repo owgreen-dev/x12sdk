@@ -1,7 +1,7 @@
 # x12sdk
 
-Typed [Pydantic](https://docs.pydantic.dev/) models and a streaming SDK/CLI for
-HIPAA ASC X12 5010 health care transactions.
+Typed [Pydantic v2](https://docs.pydantic.dev/) models and a streaming SDK/CLI
+for HIPAA ASC X12 5010 health care transactions.
 
 ![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
@@ -9,8 +9,8 @@ HIPAA ASC X12 5010 health care transactions.
 
 > **Status: pre-1.0.** x12sdk is the maintained continuation of
 > [LinuxForHealth x12](https://github.com/LinuxForHealth/x12), which stopped
-> at 0.57.0 in June 2022. The first x12sdk release will ship once the
-> Pydantic v2 port is complete. Until then, install from source.
+> at 0.57.0 in June 2022. It now runs on **Pydantic v2 and Python 3.10–3.13**.
+> A 1.0 release to PyPI follows; until then, install from source.
 
 Supported transaction sets:
 

@@ -8,7 +8,7 @@ The Health Care Claim Payment transaction set organizes loops into a hierarchica
 from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import Field, root_validator
+from pydantic import Field, model_validator
 
 from x12sdk.models import X12SegmentGroup
 from x12sdk.v5010.segments import (
@@ -62,9 +62,11 @@ class Header(X12SegmentGroup):
     st_segment: HeaderStSegment
     bpr_segment: BprSegment
     trn_segment: HeaderTrnSegment
-    cur_segment: Optional[HeaderCurSegment]
-    ref_segment: Optional[List[HeaderRefSegment]] = Field(min_items=0, max_items=2)
-    dtm_segment: Optional[DtmSegment]
+    cur_segment: Optional[HeaderCurSegment] = None
+    ref_segment: Optional[List[HeaderRefSegment]] = Field(
+        None, min_length=0, max_length=2
+    )
+    dtm_segment: Optional[DtmSegment] = None
 
 
 class Loop1000A(X12SegmentGroup):
@@ -75,8 +77,10 @@ class Loop1000A(X12SegmentGroup):
     n1_segment: Loop1000AN1Segment
     n3_segment: N3Segment
     n4_segment: N4Segment
-    ref_segment: Optional[List[Loop1000ARefSegment]] = Field(min_items=0, max_items=4)
-    per_segment: Optional[List[Loop1000APerSegment]]
+    ref_segment: Optional[List[Loop1000ARefSegment]] = Field(
+        None, min_length=0, max_length=4
+    )
+    per_segment: Optional[List[Loop1000APerSegment]] = None
 
 
 class Loop1000B(X12SegmentGroup):
@@ -85,10 +89,10 @@ class Loop1000B(X12SegmentGroup):
     """
 
     n1_segment: Loop1000BN1Segment
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
-    ref_segment: Optional[List[Loop1000BRefSegment]]
-    rdm_segment: Optional[RdmSegment]
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
+    ref_segment: Optional[List[Loop1000BRefSegment]] = None
+    rdm_segment: Optional[RdmSegment] = None
 
 
 class Loop2110(X12SegmentGroup):
@@ -97,12 +101,24 @@ class Loop2110(X12SegmentGroup):
     """
 
     svc_segment: SvcSegment
-    dtm_segment: Optional[List[Loop2110DtmSegment]] = Field(min_items=0, max_items=2)
-    cas_segment: Optional[List[Loop2110CasSegment]] = Field(min_items=0, max_items=99)
-    ref_segment: Optional[List[Loop2110RefSegment]] = Field(min_items=0, max_items=24)
-    amt_segment: Optional[List[Loop2110AmtSegment]] = Field(min_items=0, max_items=9)
-    qty_segment: Optional[List[Loop2110QtySegment]] = Field(min_items=0, max_items=6)
-    lq_segment: Optional[List[Loop2110LqSegment]] = Field(min_items=0, max_items=99)
+    dtm_segment: Optional[List[Loop2110DtmSegment]] = Field(
+        None, min_length=0, max_length=2
+    )
+    cas_segment: Optional[List[Loop2110CasSegment]] = Field(
+        None, min_length=0, max_length=99
+    )
+    ref_segment: Optional[List[Loop2110RefSegment]] = Field(
+        None, min_length=0, max_length=24
+    )
+    amt_segment: Optional[List[Loop2110AmtSegment]] = Field(
+        None, min_length=0, max_length=9
+    )
+    qty_segment: Optional[List[Loop2110QtySegment]] = Field(
+        None, min_length=0, max_length=6
+    )
+    lq_segment: Optional[List[Loop2110LqSegment]] = Field(
+        None, min_length=0, max_length=99
+    )
 
 
 class Loop2100(X12SegmentGroup):
@@ -111,19 +127,31 @@ class Loop2100(X12SegmentGroup):
     """
 
     clp_segment: ClpSegment
-    cas_segment: Optional[List[Loop2100CasSegment]] = Field(min_items=0, max_items=99)
-    nm1_segment: List[Nm1Segment] = Field(min_items=1, max_items=7)
-    mia_segment: Optional[MiaSegment]
-    moa_segment: Optional[MoaSegment]
-    ref_segment: Optional[List[Loop2100RefSegment]] = Field(min_items=0, max_items=15)
-    dtm_segment: Optional[List[Loop2100DtmSegment]] = Field(min_items=0, max_items=5)
-    per_segment: Optional[List[Loop2100PerSegment]] = Field(min_items=0, max_items=2)
-    amt_segment: Optional[List[Loop2100AmtSegment]] = Field(min_items=0, max_items=13)
-    qty_segment: Optional[List[Loop2100QtySegment]] = Field(min_items=0, max_items=14)
-    loop_2110: Optional[List[Loop2110]] = Field(min_items=0, max_items=99)
+    cas_segment: Optional[List[Loop2100CasSegment]] = Field(
+        None, min_length=0, max_length=99
+    )
+    nm1_segment: List[Nm1Segment] = Field(min_length=1, max_length=7)
+    mia_segment: Optional[MiaSegment] = None
+    moa_segment: Optional[MoaSegment] = None
+    ref_segment: Optional[List[Loop2100RefSegment]] = Field(
+        None, min_length=0, max_length=15
+    )
+    dtm_segment: Optional[List[Loop2100DtmSegment]] = Field(
+        None, min_length=0, max_length=5
+    )
+    per_segment: Optional[List[Loop2100PerSegment]] = Field(
+        None, min_length=0, max_length=2
+    )
+    amt_segment: Optional[List[Loop2100AmtSegment]] = Field(
+        None, min_length=0, max_length=13
+    )
+    qty_segment: Optional[List[Loop2100QtySegment]] = Field(
+        None, min_length=0, max_length=14
+    )
+    loop_2110: Optional[List[Loop2110]] = Field(None, min_length=0, max_length=99)
 
-    @root_validator
-    def validate_balance(cls, values):
+    @model_validator(mode="after")
+    def validate_balance(self):
         """
         Validates the claim totals reported in the CLP segment against the adjustments made in CAS segments.
         The balance is calculated as:
@@ -131,16 +159,17 @@ class Loop2100(X12SegmentGroup):
 
         CAS segments exist within loops 2100 and 2110
         """
+        values = self.__dict__
         clp_segment = values.get("clp_segment")
         if not clp_segment:
-            return values
+            return self
         charge_amount = clp_segment.total_claim_charge_amount
         payment_amount = clp_segment.claim_payment_amount
         adjustment_amount = Decimal("0.0")
 
         cas_segments = values.get("cas_segment", [])
         for adjustment in cas_segments:
-            adjustment_data = adjustment.dict()
+            adjustment_data = adjustment.model_dump()
             for i in range(1, 7, 1):
                 amount = adjustment_data.get(f"monetary_amount_{i}")
                 adjustment_amount += amount if amount else Decimal("0.0")
@@ -149,7 +178,7 @@ class Loop2100(X12SegmentGroup):
         for service_payment in loop_2110:
             adjustments = service_payment.cas_segment or []
             for adjustment in adjustments:
-                adjustment_data = adjustment.dict()
+                adjustment_data = adjustment.model_dump()
                 for i in range(1, 7, 1):
                     amount = adjustment_data.get(f"monetary_amount_{i}")
                     adjustment_amount += amount if amount else Decimal("0.0")
@@ -159,7 +188,7 @@ class Loop2100(X12SegmentGroup):
                 f"Unable to balance charge amount {charge_amount} paid amount {payment_amount} against adjustments {adjustment_amount}"
             )
 
-        return values
+        return self
 
 
 class Loop2000(X12SegmentGroup):
@@ -168,8 +197,8 @@ class Loop2000(X12SegmentGroup):
     """
 
     lx_segment: LxSegment
-    ts3_segment: Optional[Ts3Segment]
-    ts2_segment: Optional[Ts2Segment]
+    ts3_segment: Optional[Ts3Segment] = None
+    ts2_segment: Optional[Ts2Segment] = None
     loop_2100: List[Loop2100]
 
 
@@ -178,5 +207,5 @@ class Footer(X12SegmentGroup):
     Transaction Footer Information
     """
 
-    plb_segment: Optional[PlbSegment]
+    plb_segment: Optional[PlbSegment] = None
     se_segment: SeSegment

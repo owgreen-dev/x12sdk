@@ -100,9 +100,9 @@ class Header(X12SegmentGroup):
 
     st_segment: HeaderStSegment
     bgn_segment: BgnSegment
-    ref_segment: Optional[HeaderRefSegment]
-    dtp_segment: Optional[List[HeaderDtpSegment]] = Field(max_items=6)
-    qty_segment: Optional[List[HeaderQtySegment]] = Field(max_items=3)
+    ref_segment: Optional[HeaderRefSegment] = None
+    dtp_segment: Optional[List[HeaderDtpSegment]] = Field(None, max_length=6)
+    qty_segment: Optional[List[HeaderQtySegment]] = Field(None, max_length=3)
 
 
 class Loop1000A(X12SegmentGroup):
@@ -135,7 +135,7 @@ class Loop1000C(X12SegmentGroup):
     """
 
     n1_segment: Loop1000CN1Segment
-    loop_1100c: Optional[Loop1100C]
+    loop_1100c: Optional[Loop1100C] = None
 
 
 class Loop2100A(X12SegmentGroup):
@@ -144,15 +144,15 @@ class Loop2100A(X12SegmentGroup):
     """
 
     nm1_segment: Loop2100ANm1Segment
-    per_segment: Optional[BenefitEnrollmentPerSegment]
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
-    dmg_segment: Optional[Loop2100ADmgSegment]
-    ec_segment: Optional[List[EcSegment]]
-    icm_segment: Optional[IcmSegment]
-    amt_segment: Optional[List[Loop2100AAmtSegment]]
-    hlh_segment: Optional[HlhSegment]
-    lui_segment: Optional[List[LuiSegment]]
+    per_segment: Optional[BenefitEnrollmentPerSegment] = None
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
+    dmg_segment: Optional[Loop2100ADmgSegment] = None
+    ec_segment: Optional[List[EcSegment]] = None
+    icm_segment: Optional[IcmSegment] = None
+    amt_segment: Optional[List[Loop2100AAmtSegment]] = None
+    hlh_segment: Optional[HlhSegment] = None
+    lui_segment: Optional[List[LuiSegment]] = None
 
 
 class Loop2100B(X12SegmentGroup):
@@ -181,9 +181,9 @@ class Loop2100D(X12SegmentGroup):
 
     nm1_segment: Loop2100DNm1Segment
     # reusing PER segment as communication qualifiers are the same
-    per_segment: Optional[BenefitEnrollmentPerSegment]
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
+    per_segment: Optional[BenefitEnrollmentPerSegment] = None
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
 
 
 class Loop2100E(X12SegmentGroup):
@@ -193,9 +193,9 @@ class Loop2100E(X12SegmentGroup):
 
     nm1_segment: Loop2100ENm1Segment
     # reusing PER segment as communication qualifiers are the same
-    per_segment: Optional[BenefitEnrollmentPerSegment]
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
+    per_segment: Optional[BenefitEnrollmentPerSegment] = None
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
 
 
 class Loop2100F(X12SegmentGroup):
@@ -205,9 +205,9 @@ class Loop2100F(X12SegmentGroup):
 
     nm1_segment: Loop2100FNm1Segment
     # reusing PER segment as communication qualifiers are the same
-    per_segment: Optional[BenefitEnrollmentPerSegment]
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
+    per_segment: Optional[BenefitEnrollmentPerSegment] = None
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
 
 
 class Loop2100G(X12SegmentGroup):
@@ -217,9 +217,9 @@ class Loop2100G(X12SegmentGroup):
 
     nm1_segment: Loop2100GNm1Segment
     # reusing PER segment as communication qualifiers are the same
-    per_segment: Optional[BenefitEnrollmentPerSegment]
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
+    per_segment: Optional[BenefitEnrollmentPerSegment] = None
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
 
 
 class Loop2100H(X12SegmentGroup):
@@ -238,7 +238,7 @@ class Loop2200(X12SegmentGroup):
     """
 
     dsb_segment: List[DsbSegment]
-    dtp_segment: Optional[List[Loop2200DtpSegment]] = Field(max_items=2)
+    dtp_segment: Optional[List[Loop2200DtpSegment]] = Field(None, max_length=2)
 
 
 class Loop2310(X12SegmentGroup):
@@ -248,10 +248,10 @@ class Loop2310(X12SegmentGroup):
 
     lx_segment: LxSegment
     nm1_segment: Loop2310Nm1Segment
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
-    per_segment: Optional[List[BenefitEnrollmentPerSegment]]
-    pla_segment: Optional[Loop2310PlaSegment]
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
+    per_segment: Optional[List[BenefitEnrollmentPerSegment]] = None
+    pla_segment: Optional[Loop2310PlaSegment] = None
 
 
 class Loop2330(X12SegmentGroup):
@@ -260,9 +260,9 @@ class Loop2330(X12SegmentGroup):
     """
 
     nm1_segment: Loop2330Nm1Segment
-    n3_segment: Optional[N3Segment]
-    n4_segment: Optional[N4Segment]
-    per_segment: Optional[Loop2330PerSegment]
+    n3_segment: Optional[N3Segment] = None
+    n4_segment: Optional[N4Segment] = None
+    per_segment: Optional[Loop2330PerSegment] = None
 
 
 class Loop2320(X12SegmentGroup):
@@ -271,9 +271,9 @@ class Loop2320(X12SegmentGroup):
     """
 
     cob_segment: CobSegment
-    ref_segment: Optional[List[Loop2320RefSegment]]
-    dtp_segment: Optional[List[Loop2320DtpSegment]]
-    loop_2330: Optional[List[Loop2330]]
+    ref_segment: Optional[List[Loop2320RefSegment]] = None
+    dtp_segment: Optional[List[Loop2320DtpSegment]] = None
+    loop_2330: Optional[List[Loop2330]] = None
 
 
 class Loop2300(X12SegmentGroup):
@@ -283,11 +283,11 @@ class Loop2300(X12SegmentGroup):
 
     hd_segment: HdSegment
     dtp_segment: List[Loop2300DtpSegment]
-    amt_segment: Optional[List[Loop2300AmtSegment]]
-    ref_segment: Optional[List[Loop2300RefSegment]]
-    idc_segment: Optional[List[IdcSegment]]
-    loop_2310: Optional[List[Loop2310]]
-    loop_2320: Optional[List[Loop2320]]
+    amt_segment: Optional[List[Loop2300AmtSegment]] = None
+    ref_segment: Optional[List[Loop2300RefSegment]] = None
+    idc_segment: Optional[List[IdcSegment]] = None
+    loop_2310: Optional[List[Loop2310]] = None
+    loop_2320: Optional[List[Loop2320]] = None
 
 
 class Loop2750(X12SegmentGroup):
@@ -296,8 +296,8 @@ class Loop2750(X12SegmentGroup):
     """
 
     n1_segment: Loop2750N1Segment
-    ref_segment: Optional[Loop2750RefSegment]
-    dtp_segment: Optional[Loop2750DtpSegment]
+    ref_segment: Optional[Loop2750RefSegment] = None
+    dtp_segment: Optional[Loop2750DtpSegment] = None
 
 
 class Loop2700(X12SegmentGroup):
@@ -316,20 +316,20 @@ class Loop2000(X12SegmentGroup):
 
     ins_segment: Loop2000InsSegment
     ref_segment: List[Loop2000RefSegment]
-    dtp_segment: Optional[List[Loop2000DtpSegment]]
+    dtp_segment: Optional[List[Loop2000DtpSegment]] = None
     loop_2100a: Loop2100A
-    loop_2100b: Optional[Loop2100B]
-    loop_2100c: Optional[Loop2100C]
-    loop_2100d: Optional[List[Loop2100D]] = Field(max_items=3)
-    loop_2100e: Optional[Loop2100E]
-    loop_2100f: Optional[Loop2100F]
-    loop_2100g: Optional[Loop2100G]
-    loop_2100h: Optional[Loop2100H]
-    loop_2200: Optional[List[Loop2200]]
-    loop_2300: Optional[List[Loop2300]]
-    ls_segment: Optional[Loop2000LsSegment]
-    loop_2700: Optional[List[Loop2700]]
-    le_segment: Optional[Loop2000LeSegment]
+    loop_2100b: Optional[Loop2100B] = None
+    loop_2100c: Optional[Loop2100C] = None
+    loop_2100d: Optional[List[Loop2100D]] = Field(None, max_length=3)
+    loop_2100e: Optional[Loop2100E] = None
+    loop_2100f: Optional[Loop2100F] = None
+    loop_2100g: Optional[Loop2100G] = None
+    loop_2100h: Optional[Loop2100H] = None
+    loop_2200: Optional[List[Loop2200]] = None
+    loop_2300: Optional[List[Loop2300]] = None
+    ls_segment: Optional[Loop2000LsSegment] = None
+    loop_2700: Optional[List[Loop2700]] = None
+    le_segment: Optional[Loop2000LeSegment] = None
 
 
 class Footer(X12SegmentGroup):

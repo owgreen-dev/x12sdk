@@ -86,5 +86,5 @@ def test_output_delimiters(simple_270_with_new_lines, output_delimiters):
         model_result: List[X12SegmentGroup] = [m for m in r.models()]
         assert len(model_result) == 1
 
-        model_data = model_result[0].dict()
+        model_data = model_result[0].model_dump()
         _assert_delimiters(model_data, output_delimiters)

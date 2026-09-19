@@ -4,8 +4,9 @@ segments.py
 Specialized segment models for the Enrollment 834 005010X220A1 transaction.
 """
 
+import datetime
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
 
 from pydantic import Field
 
@@ -96,7 +97,7 @@ class Loop1000AN1Segment(N1Segment):
         FEDERAL_TAXPAYER_IDENTIFICATION_NUMBER = "FI"
 
     entity_identifier_code: Literal["P5"]
-    name: Optional[str] = Field(min_length=1, max_length=60)
+    name: Optional[str] = Field(None, min_length=1, max_length=60)
     identification_code_qualifier: IdentificationCodeQualifier
 
 
@@ -115,7 +116,7 @@ class Loop1000BN1Segment(N1Segment):
         CMS_PLAN_ID = "XV"
 
     entity_identifier_code: Literal["IN"]
-    name: Optional[str] = Field(min_length=1, max_length=60)
+    name: Optional[str] = Field(None, min_length=1, max_length=60)
     identification_code_qualifier: IdentificationCodeQualifier
 
 
@@ -309,13 +310,13 @@ class Loop2000InsSegment(InsSegment):
 
     individual_relationship_code: IndividualRelationshipCode
     maintenance_type_code: MaintenanceTypeCode
-    maintenance_reason_code: Optional[MaintenanceReasonCode]
+    maintenance_reason_code: Optional[MaintenanceReasonCode] = None
     benefit_status_code: BenefitStatusCode
-    cobra_qualifying_event_code: Optional[CobraQualifying]
-    employment_status_code: Optional[EmploymentStatusCode]
-    student_status_code: Optional[StudentStatusCode]
-    handicap_indicator: Optional[InsSegment.ResponseCode]
-    confidentiality_code: Optional[ConfidentiallyCode]
+    cobra_qualifying_event_code: Optional[CobraQualifying] = None
+    employment_status_code: Optional[EmploymentStatusCode] = None
+    student_status_code: Optional[StudentStatusCode] = None
+    handicap_indicator: Optional[InsSegment.ResponseCode] = None
+    confidentiality_code: Optional[ConfidentiallyCode] = None
 
 
 class Loop2000RefSegment(RefSegment):
@@ -407,7 +408,7 @@ class Loop2100ANm1Segment(Nm1Segment):
         MUTUALLY_DEFINED = "ZZ"
 
     entity_identifier_code: EntityIdentifierCode
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
 
 
 class BenefitEnrollmentPerSegment(PerSegment):
@@ -431,10 +432,10 @@ class BenefitEnrollmentPerSegment(PerSegment):
         WORK_PHONE_NUMBER = "WP"
 
     contact_function_code: Literal["IP"]
-    name: Optional[str] = Field(min_length=1, max_length=60)
+    name: Optional[str] = Field(None, min_length=1, max_length=60)
     communication_number_qualifier_1: CommunicationNumberQualifier
-    communication_number_qualifier_2: Optional[CommunicationNumberQualifier]
-    communication_number_qualifier_3: Optional[CommunicationNumberQualifier]
+    communication_number_qualifier_2: Optional[CommunicationNumberQualifier] = None
+    communication_number_qualifier_3: Optional[CommunicationNumberQualifier] = None
 
 
 class Loop2100ADmgSegment(DmgSegment):
@@ -470,9 +471,9 @@ class Loop2100ADmgSegment(DmgSegment):
         US_CITIZEN_NON_RESIDENT = "6"
         US_CITIZEN_RESIDENT = "7"
 
-    marital_status_code: Optional[MaritalStatusCode]
-    citizenship_status_code: Optional[CitizenshipStatusCode]
-    code_list_qualifier_code: Optional[Literal["REC"]]
+    marital_status_code: Optional[MaritalStatusCode] = None
+    citizenship_status_code: Optional[CitizenshipStatusCode] = None
+    code_list_qualifier_code: Optional[Literal["REC"]] = None
 
 
 class Loop2100AAmtSegment(AmtSegment):
@@ -511,7 +512,7 @@ class Loop2100BNm1Segment(Nm1Segment):
 
     entity_identifier_code: Literal["70"]
     entity_type_qualifier: Literal["1"]
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
 
 
 class Loop2100BDmgSegment(DmgSegment):
@@ -547,9 +548,9 @@ class Loop2100BDmgSegment(DmgSegment):
         US_CITIZEN_NON_RESIDENT = "6"
         US_CITIZEN_RESIDENT = "7"
 
-    marital_status_code: Optional[MaritalStatusCode]
-    citizenship_status_code: Optional[CitizenshipStatusCode]
-    code_list_qualifier_code: Optional[Literal["REC"]]
+    marital_status_code: Optional[MaritalStatusCode] = None
+    citizenship_status_code: Optional[CitizenshipStatusCode] = None
+    code_list_qualifier_code: Optional[Literal["REC"]] = None
 
 
 class Loop2100CNm1Segment(Nm1Segment):
@@ -559,8 +560,8 @@ class Loop2100CNm1Segment(Nm1Segment):
 
     entity_identifier_code: Literal["31"]
     entity_type_qualifier: Literal["1"]
-    identification_code_qualifier: Optional[str]
-    identification_code: Optional[str]
+    identification_code_qualifier: Optional[str] = None
+    identification_code: Optional[str] = None
 
 
 class Loop2100DNm1Segment(Nm1Segment):
@@ -577,7 +578,7 @@ class Loop2100DNm1Segment(Nm1Segment):
         MUTUALLY_DEFINED = "ZZ"
 
     entity_identifier_code: Literal["36"]
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
 
 
 class Loop2100ENm1Segment(Nm1Segment):
@@ -587,8 +588,8 @@ class Loop2100ENm1Segment(Nm1Segment):
 
     entity_identifier_code: Literal["M8"]
     name_last_or_organization_name: str = Field(min_length=1, max_length=80)
-    identification_code_qualifier: Optional[str]
-    identification_code: Optional[str]
+    identification_code_qualifier: Optional[str] = None
+    identification_code: Optional[str] = None
 
 
 class Loop2100FNm1Segment(Nm1Segment):
@@ -607,9 +608,9 @@ class Loop2100FNm1Segment(Nm1Segment):
     entity_identifier_code: Literal["S3"]
     entity_type_qualifier: Literal["1"]
     name_last_or_organization_name: str = Field(min_length=1, max_length=60)
-    name_first: Optional[str] = Field(min_length=1, max_length=35)
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
-    identification_code: Optional[str] = Field(min_length=2, max_length=80)
+    name_first: Optional[str] = Field(None, min_length=1, max_length=35)
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
+    identification_code: Optional[str] = Field(None, min_length=2, max_length=80)
 
 
 class Loop2100GNm1Segment(Nm1Segment):
@@ -647,8 +648,8 @@ class Loop2100GNm1Segment(Nm1Segment):
     entity_identifier_code: EntityIdentifier
     entity_type_qualifier: Literal["1"]
     name_last_or_organization_name: str = Field(min_length=1, max_length=60)
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
-    identification_code: Optional[str] = Field(min_length=2, max_length=80)
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
+    identification_code: Optional[str] = Field(None, min_length=2, max_length=80)
 
 
 class Loop2100HNm1Segment(Nm1Segment):
@@ -702,7 +703,7 @@ class Loop2300DtpSegment(DtpSegment):
 
     date_time_qualifier: DateTimeQualifier
     date_time_period_format_qualifier: DateTimePeriodFormatQualifier
-    date_time_period: str
+    date_time_period: Union[str, datetime.datetime, datetime.date]
 
 
 class Loop2300AmtSegment(AmtSegment):
@@ -794,8 +795,8 @@ class Loop2310Nm1Segment(Nm1Segment):
         UNKNOWN = "72"
 
     entity_identifier_code: EntityIdentifierCode
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
-    entity_relationship_code: Optional[EntityRelationshipCode]
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
+    entity_relationship_code: Optional[EntityRelationshipCode] = None
 
 
 class Loop2310PlaSegment(PlaSegment):
@@ -887,8 +888,10 @@ class Loop2330Nm1Segment(Nm1Segment):
 
     entity_identifier_code: EntityIdentifierCode
     entity_type_qualifier: Literal["2"]
-    name_last_or_organization_name: Optional[str] = Field(min_length=1, max_length=60)
-    identification_code_qualifier: Optional[IdentificationCodeQualifier]
+    name_last_or_organization_name: Optional[str] = Field(
+        None, min_length=1, max_length=60
+    )
+    identification_code_qualifier: Optional[IdentificationCodeQualifier] = None
 
 
 class Loop2330PerSegment(PerSegment):
@@ -960,7 +963,7 @@ class Loop2750DtpSegment(DtpSegment):
         DATE_RANGE = "RD8"
 
     date_time_qualifier: Literal["007"]
-    date_time_period: str
+    date_time_period: Union[str, datetime.datetime, datetime.date]
 
 
 class Loop2000LeSegment(LeSegment):
