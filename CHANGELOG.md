@@ -63,6 +63,21 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   `X12ApiConfig`), its `api` extra, and the Dockerfile / container tooling.
   x12sdk is an SDK and CLI; wrap it in the web framework of your choice.
 
+### Upstream issues (LinuxForHealth/x12) and their status in x12sdk
+- Carried over as x12sdk issues: #102 837D dental, #101 820 premium payment,
+  #100 278 services review, #77 generator-based accessors, #40 composite
+  fields as first-class models, #50 ISO 3166-1 alpha-3 in CUR, #141 Pydantic
+  v2 port.
+- Done here: #38 import sorting (ruff `I` rules); #125 coverage (measured in
+  CI with a fail-under gate); #124 source code scanning (CodeQL workflow);
+  #126 license scanning (`pip-licenses` CI step).
+- Won't do, because the API and container layer was removed: #140 s390x
+  image, #135 OAuth2 for the API, #134 HTTPS for the API, #133 Basic Auth
+  for the API, #123 image scans, #120 Helm chart. Wrap the SDK in your own
+  service if you need an endpoint.
+- Dropped: #59 model generation; its tracker (LinuxForHealth/bluesteel) is
+  inactive.
+
 ### Migration from `linuxforhealth-x12`
 | before | after |
 |---|---|
