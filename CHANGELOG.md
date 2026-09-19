@@ -4,6 +4,36 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Added
+- **`write_transactions()`** in `x12sdk.io`. The library could read a complete
+  file but not produce one: transaction models cover ST through SE, and the
+  reader discards the ISA/GS/GE/IEA envelopes after reading delimiters and
+  version. The writer supplies them, keeping IEA02 aligned with ISA13 and GE02
+  with GS06, and deriving GS01/GS08 from the transaction's package rather than
+  from ST03, which is optional on the 835. Consecutive transactions of the same
+  type share a functional group.
+- **`x12sdk.generate`** — synthetic transaction generation, because real files
+  contain PHI and no public corpus exists. `generate_835(seed=..., claims=...)`
+  returns a complete file; the same seed reproduces the same bytes and the
+  global random state is never touched. Claims can be described exactly
+  (`ClaimSpec`, `ServiceLineSpec`, `denial()`), with payment derived from charge
+  minus adjustments so an unbalanced remittance cannot be specified.
+- Three generated remittances added to the sample corpus, which the round-trip
+  sweep now covers (66 files to 69).
+
+### Fixed
+- `Loop2100.validate_balance` (835) raised `TypeError` on any claim with no
+  adjustments. It read `cas_segment` with a `get()` default, but the key is
+  always present and set to `None` on a model built in Python; only the parser
+  pre-seeds a list. A fully paid claim is ordinary, and constructing one was
+  impossible.
+- `Loop2110C.validate_red_cross_eb_ref_codes` (271) read a field named
+  `ref_segments`, which does not exist — the field is `ref_segment`. The lookup
+  always returned empty, so the American Red Cross reference check silently
+  passed on every transaction. It now enforces the rule.
+
 ## 1.0.0 — 2026-09-19
 
 First release of x12sdk, continuing [LinuxForHealth x12](https://github.com/LinuxForHealth/x12)
