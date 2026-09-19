@@ -32,6 +32,20 @@ remittance = generate_835(seed=1, claims=spec, payer_name="EXAMPLE HEALTH PLAN")
 A claim's payment is always derived as charge minus adjustments, so a
 specification that would break the 835 balance rule cannot be expressed.
 
+Claim submissions work the same way:
+
+```python
+from x12sdk.generate import generate_837p
+
+submission = generate_837p(seed=7, claims=25)
+```
+
+An 837 puts a claim under the subscriber when the patient is the subscriber
+and under a dependent when they are not, and code that walks the hierarchy
+often handles only the first. Generated files contain both by default; set
+``dependent_rate`` to choose the mix, or give a ``SubmissionSpec`` to place
+each claim yourself.
+
 Output is deterministic: the same seed produces byte-identical bytes.
 """
 
@@ -40,12 +54,16 @@ from typing import Optional, Sequence, Union
 
 from ..io import write_transactions
 from ._835 import build_835, random_claims
+from ._837p import build_837p, claim_specs_to_patients, random_patients
 from ._spec import (
     GROUP_CODES,
+    PATIENT_RELATIONSHIP_CODES,
     AdjustmentSpec,
     ClaimSpec,
+    PatientSpec,
     RemittanceSpec,
     ServiceLineSpec,
+    SubmissionSpec,
     denial,
     patient_responsibility,
 )
@@ -97,16 +115,83 @@ def generate_835(
     )
 
 
+def generate_837p(
+    *,
+    seed: int = 0,
+    claims: Union[int, Sequence[ClaimSpec], SubmissionSpec] = 5,
+    dependent_rate: float = 0.3,
+    billing_provider_name: Optional[str] = None,
+    payer_name: Optional[str] = None,
+    submitter_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPROV",
+    receiver_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 837P professional claim submission.
+
+    :param seed: Reproduces the same file when unchanged.
+    :param claims: A number of claims to invent, specifications to follow, or a
+        whole :class:`SubmissionSpec` when you want to place each claim on a
+        particular patient.
+    :param dependent_rate: The share of patients who are a dependent of the
+        subscriber rather than the subscriber themselves, so generated files
+        exercise both branches of the hierarchy. Ignored when a
+        ``SubmissionSpec`` is given, which says where each claim goes.
+    :param billing_provider_name: Defaults to a synthetic provider name.
+    :param payer_name: Defaults to a synthetic plan name.
+    :param submitter_name: Defaults to the billing provider.
+    :param sender_id: ISA06 / GS02.
+    :param receiver_id: ISA08 / GS03.
+    :param control_number: ST02 / SE02, at least 4 characters.
+    :return: The interchange, ISA through IEA.
+    """
+    if isinstance(claims, SubmissionSpec):
+        spec = claims
+    else:
+        values = ValueFactory(seed)
+        if isinstance(claims, int):
+            if claims < 1:
+                raise ValueError("claims must be at least 1")
+            patients = random_patients(claims, values, dependent_rate=dependent_rate)
+        else:
+            patients = claim_specs_to_patients(
+                list(claims), values, dependent_rate=dependent_rate
+            )
+        spec = SubmissionSpec(
+            patients=patients,
+            billing_provider_name=billing_provider_name,
+            payer_name=payer_name,
+            submitter_name=submitter_name,
+        )
+
+    transaction = build_837p(spec, seed=seed, control_number=control_number)
+    return write_transactions(
+        [transaction],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        # fixed so output depends only on the seed
+        created=_EPOCH,
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "ClaimSpec",
     "GROUP_CODES",
+    "PATIENT_RELATIONSHIP_CODES",
+    "PatientSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
+    "SubmissionSpec",
     "ValueFactory",
     "build_835",
+    "build_837p",
+    "claim_specs_to_patients",
     "denial",
     "generate_835",
+    "generate_837p",
     "patient_responsibility",
     "random_claims",
+    "random_patients",
 ]

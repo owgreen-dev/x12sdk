@@ -86,6 +86,20 @@ _PROCEDURES: Sequence[str] = (
     "36415",
 )
 
+#: Common ICD-10-CM diagnosis codes, for the same reason as the procedures
+#: above: so a generated file reads plausibly. ICD-10-CM is published by CMS
+#: and NCHS in the public domain; only the bare codes are used, no descriptions.
+_DIAGNOSES: Sequence[str] = (
+    "E1165",
+    "I10",
+    "J069",
+    "M545",
+    "Z0000",
+    "R5383",
+    "N390",
+    "K219",
+)
+
 
 def _luhn_check_digit(digits: str) -> str:
     """
@@ -161,10 +175,24 @@ class ValueFactory:
     def postal_code(self) -> str:
         return str(self.rng.randint(10000, 99999))
 
+    def phone_number(self) -> str:
+        """Ten digits in the 555 exchange, which is reserved for fiction."""
+        return f"{self.rng.randint(200, 999)}555{self.rng.randint(0, 9999):04d}"
+
     # --- clinical and financial -------------------------------------------
 
     def procedure(self) -> str:
         return self.rng.choice(_PROCEDURES)
+
+    def diagnosis(self) -> str:
+        """An ICD-10-CM code with the decimal point removed, as X12 carries it."""
+        return self.rng.choice(_DIAGNOSES)
+
+    def birth_date(self, youngest: int = 1, oldest: int = 90) -> datetime.date:
+        """A date of birth, relative to the same fixed epoch as service dates."""
+        epoch = datetime.date(2026, 1, 1)
+        age_days = self.rng.randint(youngest * 365, oldest * 365)
+        return epoch - datetime.timedelta(days=age_days)
 
     def amount(self, low: int = 50, high: int = 5000) -> Decimal:
         """A money amount with two decimal places."""

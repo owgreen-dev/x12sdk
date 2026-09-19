@@ -20,10 +20,25 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   global random state is never touched. Claims can be described exactly
   (`ClaimSpec`, `ServiceLineSpec`, `denial()`), with payment derived from charge
   minus adjustments so an unbalanced remittance cannot be specified.
-- Three generated remittances added to the sample corpus, which the round-trip
-  sweep now covers (66 files to 69).
+- **`generate_837p()`** — synthetic professional claim submissions, built the
+  same way. An 837 files a claim under the subscriber when the patient is the
+  subscriber and under a dependent when they are not; generated files contain
+  both branches by default, because code that walks the hierarchy commonly
+  handles only the first and silently skips the other. `dependent_rate`
+  chooses the mix and `SubmissionSpec` places each claim exactly. HL
+  numbering, parent links and child flags are assigned by the builder, and
+  the claim charge is checked against the service line total that the model
+  requires.
+- Six generated files added to the sample corpus, which the round-trip sweep
+  now covers (66 files to 72): three remittances and three claim submissions,
+  the latter covering the subscriber branch, the dependent branch and a mix.
 
 ### Fixed
+- `Loop2010Ba.ref_segment` (837P and 837I) and `Loop2000A.loop_2000b` (271)
+  were declared `min_length=0` with no default, which made them required:
+  building a subscriber in Python meant passing `ref_segment=[]` by hand, and
+  omitting it failed validation. They now default to an empty list. The parser
+  already pre-seeded one, so parsing and serialized output are unchanged.
 - `Loop2100.validate_balance` (835) raised `TypeError` on any claim with no
   adjustments. It read `cas_segment` with a `get()` default, but the key is
   always present and set to `None` on a model built in Python; only the parser

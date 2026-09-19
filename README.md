@@ -143,6 +143,39 @@ remittance = generate_835(seed=1, claims=spec, payer_name="EXAMPLE HEALTH PLAN")
 A claim's payment is derived as charge minus adjustments, so a specification
 that would break the 835 balance rule cannot be written down.
 
+Claim submissions work the same way:
+
+```python
+from x12sdk.generate import generate_837p
+
+submission = generate_837p(seed=7, claims=25)
+```
+
+In an 837 a claim sits under the subscriber when the patient is the
+subscriber, and under a dependent when they are not. Code that walks the
+hierarchy often handles only the first, so generated files contain both by
+default. Set `dependent_rate` to choose the mix, or pass a `SubmissionSpec`
+to place each claim yourself:
+
+```python
+from x12sdk.generate import (
+    ClaimSpec, PatientSpec, ServiceLineSpec, SubmissionSpec, generate_837p
+)
+
+spec = SubmissionSpec(
+    patients=[
+        PatientSpec(
+            claims=[ClaimSpec(charge="450.00",
+                              lines=[ServiceLineSpec(charge="450.00",
+                                                     procedure="99214")])],
+            dependent=True,
+            relationship="19",   # child
+        )
+    ]
+)
+submission = generate_837p(seed=1, claims=spec)
+```
+
 ## Migrating from `linuxforhealth-x12`
 
 | before | after |

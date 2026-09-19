@@ -240,7 +240,11 @@ class Loop2010Ba(X12SegmentGroup):
     n3_segment: Optional[N3Segment] = None
     n4_segment: Optional[N4Segment] = None
     dmg_segment: Optional[DmgSegment] = None
-    ref_segment: List[Optional[RefSegment]] = Field(min_length=0, max_length=2)
+    # min_length=0 but no default made this required: constructing a subscriber
+    # meant passing ref_segment=[] by hand. The parser already pre-seeds a list.
+    ref_segment: List[Optional[RefSegment]] = Field(
+        default_factory=list, min_length=0, max_length=2
+    )
     per_segment: Optional[Loop2010BaPerSegment] = None
 
 
