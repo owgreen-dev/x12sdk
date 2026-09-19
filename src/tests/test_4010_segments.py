@@ -15,7 +15,7 @@ def test_cr5_segment():
         "oxygen_test_findings_code_1": "1",
     }
     cr5_segment: Cr5Segment = Cr5Segment(**segment_data)
-    assert cr5_segment.x12() == "CR5*I*6.00********56.00**R*1~"
+    assert cr5_segment.x12() == "CR5*I*6********56**R*1~"
 
 
 def test_cr7_segment():

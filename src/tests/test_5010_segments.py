@@ -31,7 +31,8 @@ def test_act_segment():
 def test_amt_segment():
     segment_data = {"amount_qualifier_code": "R", "monetary_amount": Decimal("37.5")}
     amt_segment: AmtSegment = AmtSegment(**segment_data)
-    assert amt_segment.x12() == "AMT*R*37.50~"
+    # Decimal("37.5") keeps its scale; pass Decimal("37.50") for two places
+    assert amt_segment.x12() == "AMT*R*37.5~"
 
 
 def test_bgn_segment():
@@ -144,7 +145,7 @@ def test_cn1_segment():
     segment_data = {"contract_type_code": "02", "contract_amount": "550"}
 
     cn1_segment: Cn1Segment = Cn1Segment(**segment_data)
-    assert cn1_segment.x12() == "CN1*02*550.00~"
+    assert cn1_segment.x12() == "CN1*02*550~"
 
 
 def test_crc_segment():
@@ -168,7 +169,7 @@ def test_cr1_segment():
     }
 
     cr1_segment: Cr1Segment = Cr1Segment(**segment_data)
-    assert cr1_segment.x12() == "CR1*LB*140.00**A*DH*12.00****UNCONSCIOUS~"
+    assert cr1_segment.x12() == "CR1*LB*140**A*DH*12.0****UNCONSCIOUS~"
 
 
 def test_cr2_segment():
@@ -405,13 +406,13 @@ def test_hsd_segment():
         "period_count": 1.00,
     }
     hsd_segment: HsdSegment = HsdSegment(**segment_data)
-    assert hsd_segment.x12() == "HSD*VS*12.00*WK*3.00*34*1.00~"
+    assert hsd_segment.x12() == "HSD*VS*12.0*WK*3.0*34*1.0~"
 
 
 def test_icm_segment():
     segment_data = {"frequency_code": "1", "wage_amount": "800", "weekly_hours": "40"}
     icm_segment: IcmSegment = IcmSegment(**segment_data)
-    assert icm_segment.x12() == "ICM*1*800.00*40.00~"
+    assert icm_segment.x12() == "ICM*1*800*40~"
 
 
 def test_idc_segment():

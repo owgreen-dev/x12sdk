@@ -492,6 +492,7 @@ class Loop2400(X12SegmentGroup):
     loop_2420c: Optional[Loop2420C]
     loop_2420d: Optional[Loop2420D]
     loop_2430: Optional[List[Loop2430]] = Field(min_items=0, max_items=15)
+    loop_2440: Optional[List[Loop2440]] = Field(min_items=0)
 
 
 class Loop2300(X12SegmentGroup):

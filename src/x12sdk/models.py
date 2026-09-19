@@ -9,7 +9,8 @@ from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
+from pydantic.fields import SHAPE_LIST
 
 
 class X12Delimiters(BaseModel):
@@ -190,7 +191,9 @@ class X12Segment(abc.ABC, BaseModel):
             elif isinstance(v, datetime.time):
                 x12_values.append(v.strftime("%H%M"))
             elif isinstance(v, Decimal):
-                x12_values.append("{:.2f}".format(v))
+                # Decimal keeps the scale it was parsed with, so "2" stays "2"
+                # and "545.00" stays "545.00". "f" avoids scientific notation.
+                x12_values.append(format(v, "f"))
             elif v is None:
                 x12_values.append("")
             else:
@@ -206,6 +209,30 @@ class X12SegmentGroup(abc.ABC, BaseModel):
     """
     Abstract base class for a container, typically a loop or transaction, which groups x12 segments.
     """
+
+    @root_validator(pre=True)
+    def _wrap_single_repeatable_segments(cls, values):
+        """
+        Accepts a single segment record where the model declares a list.
+
+        The parser stores the first occurrence of a segment as a dict and only
+        appends when the loop initializer pre-seeded a list. If an initializer
+        misses a repeatable segment, the model would otherwise reject a bare
+        dict for a ``List[...]`` field. Wrapping it here keeps a missed
+        pre-seed from being a validation failure.
+
+        Pydantic v2 port: this becomes ``@model_validator(mode="before")`` and
+        the field shape check uses ``get_origin(field.annotation) is list``.
+        """
+        if not isinstance(values, dict):
+            return values
+        for name, field in cls.__fields__.items():
+            if field.shape != SHAPE_LIST:
+                continue
+            value = values.get(name)
+            if isinstance(value, dict):
+                values[name] = [value]
+        return values
 
     def x12(
         self, use_new_lines: bool = True, custom_delimiters: X12Delimiters = None

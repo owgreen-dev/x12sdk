@@ -68,7 +68,8 @@ def set_payer_identification_loop(
     :param segment_data: The current segment data
     """
     context.transaction_data[TransactionLoops.PAYER_IDENTIFICATION] = {
-        "ref_segment": []
+        "ref_segment": [],
+        "per_segment": [],
     }
     loop_data = context.transaction_data[TransactionLoops.PAYER_IDENTIFICATION]
     context.set_loop_context(TransactionLoops.PAYER_IDENTIFICATION, loop_data)

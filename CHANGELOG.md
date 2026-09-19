@@ -28,6 +28,30 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 - Corrected the `enroll-employee-managed-care.834` sample: its member-level
   `DTP*358` is not a valid loop 2000 date qualifier; the sibling enrollment
   sample's `356` (eligibility begin) is used.
+- Repeated segments are never dropped. The parser stored the first
+  occurrence of a segment as a dict and appended only when the loop
+  initializer had pre-seeded a list; a second occurrence of any segment the
+  initializer missed was silently discarded, and the first failed validation
+  (dict where a list was declared). Two safety nets now apply to every
+  transaction: the parser promotes a repeated dict to a list, and
+  `X12SegmentGroup` accepts a single record for a `List[...]` field.
+- Pre-seeded the repeatable segments that initializers missed: 835 loop 1000A
+  `PER`; 837I loop 2300 `NTE`; 271 loop 2100A `PRV`. (Independently confirmed
+  by MdClarity/x12 PR #5 for the 835 and 837I cases.)
+- 837I: loop 2440 (`LQ` form identification + `FRM`) had a model but no
+  initializer, so the segments were dropped from every service line. Added
+  the initializer and the `loop_2440` field on loop 2400.
+- 837 4010 (X096A1, X098A1): loop 2305 (`CR7` home health care plan + `HSD`)
+  had a model but no initializer, so the segments were dropped. Added the
+  initializer, and allowed the claim entity loops (2310) to follow loop 2305.
+- Decimal fields serialize with the scale they were parsed with (`HSD*VS*2`
+  no longer comes back as `HSD*VS*2.00`). Amounts written with two decimals
+  are unchanged. **Behaviour change for segments you construct yourself:**
+  `Decimal("37.5")` now serializes as `37.5`, not `37.50`; pass
+  `Decimal("37.50")` when two places are required.
+- `test_loop_initializers.py` asserts every list-typed segment field is
+  pre-seeded by its transaction's parsing module; `test_repeatable_segments.py`
+  and five new synthetic samples cover the repaired loops.
 
 ### Added
 - `test_resource_roundtrip.py`: every sample under `src/tests/resources/`

@@ -118,6 +118,7 @@ def set_information_source_name_loop(
     """
     if context.loop_name == TransactionLoops.INFORMATION_SOURCE:
         context.loop_container[TransactionLoops.INFORMATION_SOURCE_NAME] = {
+            "prv_segment": [],
             "per_segment": [],
             "aaa_segment": [],
         }

@@ -50,6 +50,7 @@ class TransactionLoops(str, Enum):
     CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_REFERRING_PROVIDER_NAME = "loop_2330h"
     CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_BILLING_PROVIDER_NAME = "loop_2330i"
     CLAIM_SERVICE_LINE = "loop_2400"
+    CLAIM_SERVICE_LINE_LINE_FORM_IDENTIFICATION = "loop_2440"
     CLAIM_SERVICE_LINE_DRUG_IDENTIFICATION_NAME = "loop_2410"
     CLAIM_SERVICE_LINE_OPERATING_PHYSICIAN_NAME = "loop_2420a"
     CLAIM_SERVICE_LINE_OTHER_OPERATING_PHYSICIAN_NAME = "loop_2420b"
@@ -339,6 +340,7 @@ def set_claim_loop(context: X12ParserContext, segment_data: Dict) -> None:
             "pwk_segment": [],
             "ref_segment": [],
             "k3_segment": [],
+            "nte_segment": [],
             "hi_segment": [],
         }
     )
@@ -630,6 +632,27 @@ def set_service_line_adjudication_loop(
         TransactionLoops.CLAIM_SERVICE_LINE_LINE_ADJUDICATION_INFORMATION,
         adjudication_loop,
     )
+
+
+@match("LQ")
+def set_form_identification_loop(context: X12ParserContext, segment_data: Dict) -> None:
+    """
+    Sets the form identification loop (Loop 2440) within the current service line.
+
+    :param context: The X12Parsing context which contains the current loop and transaction record.
+    :param segment_data: The current segment data
+    """
+    service_line = _get_service_line(context)
+    loop_name = TransactionLoops.CLAIM_SERVICE_LINE_LINE_FORM_IDENTIFICATION
+    loop_data = {"frm_segment": []}
+
+    if loop_name not in service_line:
+        service_line[loop_name] = [loop_data]
+    else:
+        service_line[loop_name].append(loop_data)
+
+    loop_record = service_line[loop_name][-1]
+    context.set_loop_context(loop_name, loop_record)
 
 
 @match("SE")

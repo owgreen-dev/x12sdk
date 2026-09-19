@@ -182,7 +182,11 @@ The requirements for implementing a parsing function include:
 * The function has two parameters: X12ParserContext and segment_data.
 * The function is decorated with the `@match` decorator.
 * The function sets the current loop and loop container based on the matched segment.
-* The function initializes list fields within the loop container. Example: `{"ref_segment": []}`
+* The function initializes list fields within the loop container. Example: `{"ref_segment": []}`.
+  Every repeatable segment declared as a `List[...]` on the loop model must be pre-seeded here;
+  `src/tests/test_loop_initializers.py` checks this. (If one is missed, the parser still promotes a
+  repeated segment to a list and the model accepts a single record for a list field, so data is not
+  lost, but the pre-seed keeps intent explicit.)
 * The function sets the context.subscriber_record and context.patient_record attributes as needed to simplify processing.
 
 

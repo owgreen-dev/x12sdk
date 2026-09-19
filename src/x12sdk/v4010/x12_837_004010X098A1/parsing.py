@@ -394,7 +394,12 @@ def set_claim_entity_loop(context: X12ParserContext, segment_data: Dict) -> None
     * Service Facility Location- Loop 2310D
     * Supervising Provider Name - Loop 2310E
     """
-    if "loop_2300" in context.loop_name or "loop_2310" in context.loop_name:
+    # loop 2305 (home health care plan) sits between the claim and its entity loops
+    if (
+        "loop_2300" in context.loop_name
+        or "loop_2305" in context.loop_name
+        or "loop_2310" in context.loop_name
+    ):
         identifier = segment_data.get("entity_identifier_code")
         loop_name = None
 
@@ -719,6 +724,22 @@ def set_form_identification_loop(context: X12ParserContext, segment_data: Dict) 
 
     loop_record = service_line[loop_name][-1]
     context.set_loop_context(loop_name, loop_record)
+
+
+@match("CR7")
+def set_home_health_care_plan_loop(
+    context: X12ParserContext, segment_data: Dict
+) -> None:
+    """
+    Sets the home health care plan information loop (Loop 2305) within the claim.
+
+    :param context: The X12Parsing context which contains the current loop and transaction record.
+    :param segment_data: The current segment data
+    """
+    claim = _get_claim(context)
+    loop_data = {"hsd_segment": []}
+    claim[TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN] = loop_data
+    context.set_loop_context(TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN, loop_data)
 
 
 @match("SE")

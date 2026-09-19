@@ -325,6 +325,14 @@ class X12Parser(ABC):
             self._context.loop_container[segment_key] = segment_data
         elif isinstance(existing_value, list):
             self._context.loop_container[segment_key].append(segment_data)
+        else:
+            # A repeated segment whose loop initializer did not pre-seed a
+            # list. Never drop it silently: promote the entry to a list so
+            # the model either accepts the repeat or reports it clearly.
+            self._context.loop_container[segment_key] = [
+                existing_value,
+                segment_data,
+            ]
 
         # close transaction set and return the model
         if self._is_final_segment(segment_name):
