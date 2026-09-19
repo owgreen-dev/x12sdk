@@ -1,12 +1,20 @@
 """
 io.py
 
-Supports X12 I/O operations related to reading and writing X12 transaction sets.
+Reads X12 transaction sets into models, and writes models back out as a
+complete X12 interchange.
+
+The transaction models cover ST through SE. The interchange (ISA/IEA) and
+functional group (GS/GE) envelopes are not modelled: the reader parses them
+for delimiters and version and then discards them. :func:`write_transactions`
+supplies them on the way out.
 """
 
+import datetime
 import logging
 from io import StringIO, TextIOBase
-from typing import Dict, Iterator, List, Optional, Tuple
+from pathlib import Path
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from .config import IsaDelimiters, TransactionSetVersionIds, get_config
 from .models import X12Delimiters, X12SegmentGroup, X12SegmentName
@@ -14,6 +22,17 @@ from .parsing import X12Parser, create_parser
 from .support import is_x12_data, is_x12_file
 
 logger = logging.getLogger(__name__)
+
+#: Transaction set code -> GS01 functional identifier code.
+FUNCTIONAL_IDENTIFIER_CODES: Dict[str, str] = {
+    "270": "HS",
+    "271": "HB",
+    "276": "HR",
+    "277": "HN",
+    "834": "BE",
+    "835": "HP",
+    "837": "HC",
+}
 
 
 class X12SegmentReader:
@@ -239,3 +258,155 @@ class X12ModelReader:
         :param exc_tb: Exception traceback
         """
         self._x12_segment_reader.__exit__(exc_type, exc_val, exc_tb)
+
+
+def _transaction_identity(transaction: X12SegmentGroup) -> Tuple[str, str]:
+    """
+    Returns ``(transaction_set_code, implementation_version)`` for a model.
+
+    The transaction package encodes both, e.g. ``x12sdk.v5010.x12_835_005010X221A1``
+    yields ``("835", "005010X221A1")``. That is more reliable than reading ST03,
+    which is optional on some transaction sets (the 835 among them).
+    """
+    for part in type(transaction).__module__.split("."):
+        if part.startswith("x12_"):
+            _, code, version = part.split("_", 2)
+            return code, version
+    raise ValueError(
+        f"Cannot determine the transaction set of {type(transaction).__name__}; "
+        "it does not live in an x12_<code>_<version> package."
+    )
+
+
+def _interchange_id(value: str, field: str) -> str:
+    """
+    Validates an interchange id and pads it to the 15 characters ISA requires.
+
+    The same value also becomes the GS application code, which the standard
+    bounds at 2 to 15 characters. Checking both here gives a message that names
+    the argument, rather than a validation error about a GS field the caller
+    never mentioned.
+    """
+    stripped = value.strip()
+    if not 2 <= len(stripped) <= 15:
+        raise ValueError(
+            f"{field} must be 2 to 15 characters, got {len(stripped)}: {value!r}"
+        )
+    return stripped.ljust(15)
+
+
+def write_transactions(
+    transactions: Iterable[X12SegmentGroup],
+    *,
+    sender_id: str,
+    receiver_id: str,
+    sender_qualifier: str = "30",
+    receiver_qualifier: str = "30",
+    interchange_control_number: str = "000000001",
+    group_control_number: str = "1",
+    created: Optional[datetime.datetime] = None,
+    usage_indicator: str = "T",
+    path: Optional[str] = None,
+) -> str:
+    """
+    Writes transaction models as a complete X12 interchange.
+
+    Transaction models cover ST through SE; this adds the ISA/IEA interchange
+    and GS/GE functional group envelopes around them. Consecutive transactions
+    of the same type share a functional group, so a mixed list produces one
+    group per run of like transactions.
+
+    Control numbers are kept consistent for you: IEA02 matches ISA13 and GE02
+    matches GS06, and both counts reflect what was actually written.
+
+    :param transactions: Transaction set models, e.g. from :class:`X12ModelReader`.
+    :param sender_id: ISA06 interchange sender id, padded to 15 characters.
+    :param receiver_id: ISA08 interchange receiver id, padded to 15 characters.
+    :param sender_qualifier: ISA05, defaults to ``30`` (US federal tax id).
+    :param receiver_qualifier: ISA07, defaults to ``30``.
+    :param interchange_control_number: ISA13/IEA02, padded to 9 digits.
+    :param group_control_number: GS06/GE02 for the first group; later groups increment.
+    :param created: Timestamp for ISA09/10 and GS04/05. Defaults to now.
+    :param usage_indicator: ISA15, ``T`` for test or ``P`` for production.
+    :param path: Optional file to write to. The interchange is returned either way.
+    :return: The complete X12 interchange.
+    :raises ValueError: if a transaction's type cannot be determined, or an
+        interchange id is not 2 to 15 characters.
+    """
+    from .v5010.segments import GeSegment, GsSegment, IeaSegment, IsaSegment
+
+    transactions = list(transactions)
+    if not transactions:
+        raise ValueError("write_transactions requires at least one transaction")
+
+    created = created or datetime.datetime.now()
+
+    # group consecutive transactions of the same type into one functional group
+    groups: List[Tuple[str, str, List[X12SegmentGroup]]] = []
+    for transaction in transactions:
+        code, version = _transaction_identity(transaction)
+        if groups and groups[-1][0] == code and groups[-1][1] == version:
+            groups[-1][2].append(transaction)
+        else:
+            groups.append((code, version, [transaction]))
+
+    isa = IsaSegment(
+        authorization_information_qualifier="00",
+        authorization_information=" " * 10,
+        security_information_qualifier="00",
+        security_information=" " * 10,
+        interchange_sender_qualifier=sender_qualifier,
+        interchange_sender_id=_interchange_id(sender_id, "sender_id"),
+        interchange_receiver_qualifier=receiver_qualifier,
+        interchange_receiver_id=_interchange_id(receiver_id, "receiver_id"),
+        interchange_date=created.strftime("%y%m%d"),
+        interchange_time=created.strftime("%H%M"),
+        repetition_separator="^",
+        interchange_control_version_number="00501",
+        interchange_control_number=interchange_control_number.zfill(9),
+        acknowledgment_requested="0",
+        interchange_usage_indicator=usage_indicator,
+        component_element_separator=":",
+    )
+
+    chunks: List[str] = [isa.x12()]
+
+    for index, (code, version, members) in enumerate(groups):
+        if code not in FUNCTIONAL_IDENTIFIER_CODES:
+            raise ValueError(
+                f"No functional identifier code known for transaction set {code}"
+            )
+        control_number = str(int(group_control_number) + index)
+        chunks.append(
+            GsSegment(
+                functional_identifier_code=FUNCTIONAL_IDENTIFIER_CODES[code],
+                application_sender_code=sender_id.strip(),
+                application_receiver_code=receiver_id.strip(),
+                functional_group_creation_date=created.strftime("%Y%m%d"),
+                functional_group_creation_time=created.strftime("%H%M"),
+                group_control_number=control_number,
+                responsible_agency_code="X",
+                version_identifier_code=version,
+            ).x12()
+        )
+        chunks.extend(member.x12() for member in members)
+        chunks.append(
+            GeSegment(
+                number_of_transaction_sets_included=len(members),
+                group_control_number=control_number,
+            ).x12()
+        )
+
+    chunks.append(
+        IeaSegment(
+            number_of_included_functional_groups=len(groups),
+            interchange_control_number=interchange_control_number.zfill(9),
+        ).x12()
+    )
+
+    interchange = "\n".join(chunks)
+
+    if path is not None:
+        Path(path).write_text(interchange)
+
+    return interchange
