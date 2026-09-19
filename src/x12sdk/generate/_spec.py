@@ -112,6 +112,69 @@ class RemittanceSpec:
         return sum((claim.paid for claim in self.claims), Decimal("0.00"))
 
 
+#: PAT01 relationship codes, used when the patient is not the subscriber.
+PATIENT_RELATIONSHIP_CODES = ("01", "19", "20", "21", "39", "40", "53", "G8")
+
+
+@dataclass(frozen=True)
+class PatientSpec:
+    """
+    One patient on a claim submission, with the claims filed for them.
+
+    In an 837 a patient is either the subscriber themselves or a dependent of
+    one, and the two sit at different depths in the hierarchy. Saying which
+    here is what puts the claim on the right branch.
+    """
+
+    claims: Sequence[ClaimSpec]
+    dependent: bool = False
+    relationship: str = "19"
+
+    def __post_init__(self) -> None:
+        if not self.claims:
+            raise ValueError("a patient must have at least one claim")
+        if self.dependent and self.relationship not in PATIENT_RELATIONSHIP_CODES:
+            raise ValueError(
+                f"relationship must be one of {PATIENT_RELATIONSHIP_CODES}, "
+                f"got {self.relationship!r}"
+            )
+
+
+@dataclass(frozen=True)
+class SubmissionSpec:
+    """A whole 837: one billing provider filing claims with one payer."""
+
+    patients: Sequence[PatientSpec]
+    billing_provider_name: Optional[str] = None
+    payer_name: Optional[str] = None
+    submitter_name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.patients:
+            raise ValueError("a submission must have at least one patient")
+        # A claim submission has no way to say what a payer did not pay, so an
+        # adjustment here would silently vanish from the output.
+        for patient in self.patients:
+            for claim in patient.claims:
+                if claim.adjustments or any(line.adjustments for line in claim.lines):
+                    raise ValueError(
+                        "adjustments describe a payer's decision and cannot be "
+                        "represented on a claim submission; put them on the "
+                        "remittance instead"
+                    )
+                if not claim.lines:
+                    raise ValueError(
+                        "a submitted claim must have at least one service line"
+                    )
+
+    @property
+    def total_charge(self) -> Decimal:
+        return sum(
+            (claim.charge for patient in self.patients for claim in patient.claims),
+            Decimal("0.00"),
+        )
+
+
 def denial(group: str, reason: str, amount) -> AdjustmentSpec:
     """
     Shorthand for a payer-side adjustment.
@@ -131,8 +194,11 @@ __all__ = [
     "AdjustmentSpec",
     "ClaimSpec",
     "GROUP_CODES",
+    "PATIENT_RELATIONSHIP_CODES",
+    "PatientSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
+    "SubmissionSpec",
     "denial",
     "patient_responsibility",
 ]

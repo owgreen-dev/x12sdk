@@ -325,7 +325,8 @@ class Loop2000A(X12SegmentGroup):
         None, min_length=0, max_length=9
     )
     loop_2100a: Loop2100A
-    loop_2000b: List[Loop2000B] = Field(min_length=0)
+    # min_length=0 but no default made this required; the parser pre-seeds a list
+    loop_2000b: List[Loop2000B] = Field(default_factory=list, min_length=0)
 
 
 class Footer(X12SegmentGroup):
