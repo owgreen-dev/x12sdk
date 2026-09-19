@@ -224,8 +224,11 @@ class Loop2110C(X12SegmentGroup):
         values = self.__dict__
         benefit_code = values["eb_segment"].eligibility_benefit_information
         arc_ref_types = {"1W", "49", "F6", "NQ"}
+        # the field is ref_segment, singular; the plural key this used to read
+        # never existed, so this check silently passed on every transaction
         ref_types = {
-            r.reference_identification_qualifier for r in values.get("ref_segments", [])
+            r.reference_identification_qualifier
+            for r in values.get("ref_segment") or []
         }
 
         if ref_types and benefit_code == "R" and (ref_types - arc_ref_types):

@@ -167,7 +167,9 @@ class Loop2100(X12SegmentGroup):
         payment_amount = clp_segment.claim_payment_amount
         adjustment_amount = Decimal("0.0")
 
-        cas_segments = values.get("cas_segment", [])
+        # `or []` rather than a get() default: the key is always present, set
+        # to None, on a model built in Python. Only the parser pre-seeds a list.
+        cas_segments = values.get("cas_segment") or []
         for adjustment in cas_segments:
             adjustment_data = adjustment.model_dump()
             for i in range(1, 7, 1):

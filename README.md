@@ -95,6 +95,54 @@ x12sdk -s -p demo-file/demo.270   # segments
 x12sdk -m -p demo-file/demo.270   # models
 ```
 
+## Writing X12
+
+The transaction models cover ST through SE. `write_transactions` adds the
+interchange and functional group envelopes and keeps the control numbers
+consistent, so you get a file a trading partner would accept.
+
+```python
+from x12sdk.io import X12ModelReader, write_transactions
+
+with X12ModelReader("in.835") as reader:
+    transactions = list(reader.models())
+
+out = write_transactions(transactions, sender_id="SENDERID", receiver_id="RECEIVERID")
+```
+
+## Generating synthetic files
+
+Real claims and remittances contain PHI, and there is no public X12 corpus to
+test against. `x12sdk.generate` builds valid transactions from the same models
+the parser produces, so your test data is guaranteed synthetic.
+
+```python
+from x12sdk.generate import generate_835
+
+remittance = generate_835(seed=7, claims=25)   # a complete file, envelope included
+```
+
+The same seed always produces the same bytes, and generation never touches the
+global random state, so it is safe inside someone else's test suite.
+
+To build a specific scenario, describe it:
+
+```python
+from x12sdk.generate import ClaimSpec, ServiceLineSpec, denial, generate_835
+
+spec = [
+    ClaimSpec(
+        charge="900.00",
+        lines=[ServiceLineSpec(charge="900.00", procedure="99214",
+                               adjustments=[denial("CO", "97", "300.00")])],
+    )
+]
+remittance = generate_835(seed=1, claims=spec, payer_name="EXAMPLE HEALTH PLAN")
+```
+
+A claim's payment is derived as charge minus adjustments, so a specification
+that would break the 835 balance rule cannot be written down.
+
 ## Migrating from `linuxforhealth-x12`
 
 | before | after |
