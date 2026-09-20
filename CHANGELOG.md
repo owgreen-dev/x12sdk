@@ -4,7 +4,7 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
-## Unreleased
+## 1.1.0 — 2026-09-19
 
 ### Added
 - **`write_transactions()`** in `x12sdk.io`. The library could read a complete
@@ -61,6 +61,13 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   others). **No X12/WPC code-list text ships with x12sdk** — the descriptions
   are licensed separately. `load_code_descriptions()` reads a list you supply,
   and a test guards against that text being vendored in future.
+- The category table deliberately leaves `A2` and `42` in `other`, although
+  both are contractual write-offs in routine work. `contractual` is the
+  category a denial review skips: `A2` is payer-discretionary in practice, and
+  `42` was retired in favour of `45`, so a payer still sending it is itself
+  worth a second look. The reasoning is recorded in the table and pinned by a
+  test, so it is not later closed as an oversight. Override it with your own
+  mapping if your book of business treats them as routine.
 
 ### Fixed
 - `Loop2010Ba.ref_segment` (837P and 837I) and `Loop2000A.loop_2000b` (271)
