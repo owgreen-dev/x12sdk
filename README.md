@@ -259,6 +259,23 @@ for row in describe(denial_summary(rows), descriptions):
     print(row["reason_code"], row["description"], row["total_amount"])
 ```
 
+Eligibility works the same way, and a 270 and the 271 answering it can be
+generated as a matched pair from one specification:
+
+```python
+from x12sdk.generate import BenefitSpec, EligibilitySpec, MemberSpec
+from x12sdk.generate import generate_270, generate_271
+
+spec = EligibilitySpec(
+    members=[MemberSpec(benefits=(BenefitSpec(service_type="35"),), dependent=True)]
+)
+inquiry = generate_270(seed=1, members=spec)
+response = generate_271(seed=1, members=spec)
+```
+
+The eligibility transactions carry the same subscriber and dependent branch as
+the 837, so generated files contain both by default here too.
+
 ## Migrating from `linuxforhealth-x12`
 
 | before | after |

@@ -37,7 +37,10 @@ def _validate_duplicate_codes(values: Dict, segment_name: str, code_field: str):
     AMT*D*411~
     """
     codes = defaultdict(int)
-    for segment in values.get(segment_name, []):
+    # `or []` rather than a get() default: on a model built in Python the key
+    # is always present and set to None. Only the parser pre-seeds a list, so
+    # a get() default never fires and every constructed loop raised TypeError.
+    for segment in values.get(segment_name) or []:
         # account for differing internal representation: model vs dict
         if not isinstance(segment, dict):
             segment = segment.model_dump()

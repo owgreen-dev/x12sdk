@@ -55,11 +55,16 @@ from typing import Optional, Sequence, Union
 from ..io import write_transactions
 from ._835 import build_835, random_claims
 from ._837p import build_837p, claim_specs_to_patients, random_patients
+from ._eligibility import build_270, build_271, random_members
 from ._spec import (
+    BENEFIT_STATUS_CODES,
     GROUP_CODES,
     PATIENT_RELATIONSHIP_CODES,
     AdjustmentSpec,
+    BenefitSpec,
     ClaimSpec,
+    EligibilitySpec,
+    MemberSpec,
     PatientSpec,
     RemittanceSpec,
     ServiceLineSpec,
@@ -175,23 +180,113 @@ def generate_837p(
     )
 
 
+def _eligibility_spec(
+    members, seed, dependent_rate, payer_name, provider_name
+) -> EligibilitySpec:
+    """Turns a count, a list of members, or a whole spec into a spec."""
+    if isinstance(members, EligibilitySpec):
+        return members
+    if isinstance(members, int):
+        if members < 1:
+            raise ValueError("members must be at least 1")
+        members = random_members(
+            members, ValueFactory(seed), dependent_rate=dependent_rate
+        )
+    return EligibilitySpec(
+        members=list(members), payer_name=payer_name, provider_name=provider_name
+    )
+
+
+def generate_270(
+    *,
+    seed: int = 0,
+    members: Union[int, Sequence[MemberSpec], EligibilitySpec] = 5,
+    dependent_rate: float = 0.3,
+    payer_name: Optional[str] = None,
+    provider_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPROV",
+    receiver_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 270 eligibility inquiry.
+
+    :param seed: Reproduces the same file when unchanged.
+    :param members: A number of members to invent, specifications to follow, or
+        a whole :class:`EligibilitySpec`.
+    :param dependent_rate: The share of members who are a dependent of the
+        subscriber rather than the subscriber themselves, so generated files
+        exercise both branches. Ignored when an ``EligibilitySpec`` is given.
+    :param payer_name: Defaults to a synthetic plan name.
+    :param provider_name: Defaults to a synthetic provider name.
+    :param sender_id: ISA06 / GS02.
+    :param receiver_id: ISA08 / GS03.
+    :param control_number: ST02 / SE02, at least 4 characters.
+    :return: The interchange, ISA through IEA.
+    """
+    spec = _eligibility_spec(members, seed, dependent_rate, payer_name, provider_name)
+    return write_transactions(
+        [build_270(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
+def generate_271(
+    *,
+    seed: int = 0,
+    members: Union[int, Sequence[MemberSpec], EligibilitySpec] = 5,
+    dependent_rate: float = 0.3,
+    payer_name: Optional[str] = None,
+    provider_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPAYER",
+    receiver_id: str = "SYNTHETICPROV",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 271 eligibility response.
+
+    Takes the same specification as :func:`generate_270`, so an inquiry and
+    the response to it can be generated as a matched pair from one spec.
+
+    :return: The interchange, ISA through IEA.
+    """
+    spec = _eligibility_spec(members, seed, dependent_rate, payer_name, provider_name)
+    return write_transactions(
+        [build_271(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
+    "BENEFIT_STATUS_CODES",
+    "BenefitSpec",
     "ClaimSpec",
+    "EligibilitySpec",
     "GROUP_CODES",
+    "MemberSpec",
     "PATIENT_RELATIONSHIP_CODES",
     "PatientSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
     "SubmissionSpec",
     "ValueFactory",
+    "build_270",
+    "build_271",
     "build_835",
     "build_837p",
     "claim_specs_to_patients",
     "denial",
+    "generate_270",
+    "generate_271",
     "generate_835",
     "generate_837p",
     "patient_responsibility",
     "random_claims",
+    "random_members",
     "random_patients",
 ]
