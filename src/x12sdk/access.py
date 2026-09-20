@@ -284,10 +284,264 @@ class RemittanceAccess:
                 )
 
 
+# --- 270 and 271 eligibility ------------------------------------------------
+
+
+def _as_tuple(value) -> Tuple[Any, ...]:
+    """
+    Normalises a loop that is a list on one transaction and a single loop on
+    the other.
+
+    The 271 holds a list of 2110 benefit loops; the 270 holds exactly one. A
+    caller should not have to care which, so both arrive as a tuple.
+    """
+    if value is None:
+        return ()
+    if isinstance(value, (list, tuple)):
+        return tuple(value)
+    return (value,)
+
+
+@dataclass(frozen=True)
+class EligibilityMember:
+    """
+    One person an eligibility transaction is about, with its context.
+
+    ``member`` is the loop describing whoever the question is about: loop
+    2100D when they are a dependent, and the subscriber's own loop 2100C when
+    they are not. Reading it does not require knowing which.
+    """
+
+    member: Any
+    subscriber: Any
+    payer: Any
+    provider: Any
+    benefits: Tuple[Any, ...]
+    is_dependent: bool
+
+    @property
+    def name(self) -> Tuple[Optional[str], Optional[str]]:
+        return _name(self.member.nm1_segment)
+
+    @property
+    def subscriber_name(self) -> Tuple[Optional[str], Optional[str]]:
+        return _name(self.subscriber.nm1_segment)
+
+    @property
+    def member_id(self) -> Optional[str]:
+        """NM109 on loop 2100C, the subscriber's identifier with the payer."""
+        return self.subscriber.nm1_segment.identification_code
+
+    @property
+    def payer_name(self) -> Optional[str]:
+        return _name(self.payer.nm1_segment)[0]
+
+    @property
+    def provider_name(self) -> Optional[str]:
+        return _name(self.provider.nm1_segment)[0]
+
+    @property
+    def service_type_codes(self) -> Tuple[str, ...]:
+        """
+        The service types asked about or answered, across every benefit loop.
+
+        EQ01 on an inquiry and EB03 on a response both repeat, so both come
+        back flattened.
+        """
+        codes: List[str] = []
+        for benefit in self.benefits:
+            segment = getattr(benefit, "eq_segment", None) or getattr(
+                benefit, "eb_segment", None
+            )
+            if segment is None:
+                continue
+            value = getattr(segment, "service_type_code", None)
+            if value is None:
+                continue
+            codes.extend(str(code) for code in _as_tuple(value))
+        return tuple(codes)
+
+
+class EligibilityAccess:
+    """
+    ``members()`` for the 270 and 271 transaction models.
+
+    The inquiry and the response have identical loop names at every level this
+    walks, so one traversal serves both.
+    """
+
+    def members(self) -> Iterator[EligibilityMember]:
+        """
+        Yields every person the transaction is about, in file order.
+
+        Subscribers who are themselves the patient and dependents both appear;
+        ``EligibilityMember.is_dependent`` says which, and ``member`` already
+        points at the right loop either way.
+        """
+        for loop_2000a in self.loop_2000a:
+            payer = loop_2000a.loop_2100a
+            for loop_2000b in loop_2000a.loop_2000b:
+                provider = loop_2000b.loop_2100b
+                for loop_2000c in loop_2000b.loop_2000c or []:
+                    subscriber = loop_2000c.loop_2100c
+                    dependents = loop_2000c.loop_2000d or []
+                    own_benefits = _as_tuple(getattr(subscriber, "loop_2110c", None))
+
+                    # The subscriber is a member in their own right whenever
+                    # the transaction says something about them, and also when
+                    # they are the only person in the record. A subscriber who
+                    # carries benefits *and* has dependents is both, so
+                    # yielding only the dependents would drop their coverage.
+                    if own_benefits or not dependents:
+                        yield EligibilityMember(
+                            member=subscriber,
+                            subscriber=subscriber,
+                            payer=payer,
+                            provider=provider,
+                            benefits=own_benefits,
+                            is_dependent=False,
+                        )
+
+                    for loop_2000d in dependents:
+                        dependent = loop_2000d.loop_2100d
+                        yield EligibilityMember(
+                            member=dependent,
+                            subscriber=subscriber,
+                            payer=payer,
+                            provider=provider,
+                            benefits=_as_tuple(getattr(dependent, "loop_2110d", None)),
+                            is_dependent=True,
+                        )
+
+
+# --- 276 and 277 claim status ----------------------------------------------
+
+
+@dataclass(frozen=True)
+class TrackedClaim:
+    """
+    One claim being asked about on a 276 or reported on a 277.
+
+    ``patient`` is loop 2100E when the patient is a dependent and the
+    subscriber's own loop 2100D when they are not.
+    """
+
+    status: Any
+    patient: Any
+    subscriber: Any
+    payer: Any
+    requester: Any
+    provider: Any
+    is_dependent: bool
+
+    @property
+    def trace_number(self) -> Optional[str]:
+        """TRN02, which ties an inquiry to the response answering it."""
+        return self.status.trn_segment.reference_identification_1
+
+    @property
+    def patient_name(self) -> Tuple[Optional[str], Optional[str]]:
+        return _name(self.patient.nm1_segment)
+
+    @property
+    def member_id(self) -> Optional[str]:
+        return self.subscriber.nm1_segment.identification_code
+
+    @property
+    def payer_name(self) -> Optional[str]:
+        return _name(self.payer.nm1_segment)[0]
+
+    @property
+    def provider_name(self) -> Optional[str]:
+        return _name(self.provider.nm1_segment)[0]
+
+    @property
+    def statuses(self) -> Tuple[Any, ...]:
+        """The STC segments. Empty on a 276, which asks rather than answers."""
+        return _as_tuple(getattr(self.status, "stc_segment", None))
+
+    @property
+    def charge(self) -> Optional[Decimal]:
+        """
+        What was billed.
+
+        The inquiry states it in AMT*T3 and the response in STC04, so the
+        caller does not have to know which transaction it is holding.
+        """
+        amt_segment = getattr(self.status, "amt_segment", None)
+        if amt_segment is not None:
+            return amt_segment.monetary_amount
+        for stc in self.statuses:
+            if stc.total_claim_charge_amount is not None:
+                return stc.total_claim_charge_amount
+        return None
+
+    @property
+    def paid(self) -> Optional[Decimal]:
+        """STC05, present only on a response."""
+        for stc in self.statuses:
+            if stc.claim_payment_amount is not None:
+                return stc.claim_payment_amount
+        return None
+
+
+class ClaimStatusAccess:
+    """
+    ``claims()`` for the 276 and 277 transaction models.
+
+    The inquiry and the response have identical loop names at every level this
+    walks, so one traversal serves both.
+    """
+
+    def claims(self) -> Iterator[TrackedClaim]:
+        """
+        Yields every tracked claim in the transaction, in file order.
+
+        A claim hangs off the subscriber when the subscriber is the patient
+        and off the dependent otherwise, never both.
+        """
+        for loop_2000a in self.loop_2000a:
+            payer = loop_2000a.loop_2100a
+            for loop_2000b in loop_2000a.loop_2000b or []:
+                requester = loop_2000b.loop_2100b
+                for loop_2000c in loop_2000b.loop_2000c or []:
+                    provider = loop_2000c.loop_2100c
+                    for loop_2000d in loop_2000c.loop_2000d or []:
+                        subscriber = loop_2000d.loop_2100d
+                        context = {
+                            "subscriber": subscriber,
+                            "payer": payer,
+                            "requester": requester,
+                            "provider": provider,
+                        }
+
+                        for status in loop_2000d.loop_2200d or []:
+                            yield TrackedClaim(
+                                status=status,
+                                patient=subscriber,
+                                is_dependent=False,
+                                **context,
+                            )
+
+                        for loop_2000e in loop_2000d.loop_2000e or []:
+                            dependent = loop_2000e.loop_2100e
+                            for status in loop_2000e.loop_2200e or []:
+                                yield TrackedClaim(
+                                    status=status,
+                                    patient=dependent,
+                                    is_dependent=True,
+                                    **context,
+                                )
+
+
 __all__ = [
+    "ClaimStatusAccess",
     "ClaimSubmissionAccess",
+    "EligibilityAccess",
+    "EligibilityMember",
     "PaidClaim",
     "RemittanceAccess",
     "SubmittedClaim",
     "Subscriber",
+    "TrackedClaim",
 ]

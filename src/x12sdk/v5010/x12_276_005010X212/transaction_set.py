@@ -8,13 +8,14 @@ from typing import List
 
 from pydantic import Field, model_validator
 
+from x12sdk.access import ClaimStatusAccess
 from x12sdk.models import X12SegmentGroup
 from x12sdk.validators import validate_segment_count
 
 from .loops import Footer, Header, Loop2000A
 
 
-class HealthCareClaimsStatusRequest(X12SegmentGroup):
+class HealthCareClaimsStatusRequest(ClaimStatusAccess, X12SegmentGroup):
     """
     The Health Care Claims Status transaction model - 276
     """

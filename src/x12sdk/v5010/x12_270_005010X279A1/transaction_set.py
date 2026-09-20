@@ -8,13 +8,14 @@ from typing import Dict, List, Tuple
 
 from pydantic import model_validator
 
+from x12sdk.access import EligibilityAccess
 from x12sdk.models import X12SegmentGroup
 from x12sdk.validators import validate_segment_count
 
 from .loops import Footer, Header, Loop2000A
 
 
-class EligibilityInquiry(X12SegmentGroup):
+class EligibilityInquiry(EligibilityAccess, X12SegmentGroup):
     """
     The ASC X12 270 (EligibilityInquiry) transaction model.
     """

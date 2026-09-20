@@ -99,6 +99,23 @@ subscribers and their dependents.
 `claims()` on an 835 yields the claim payments, each with `charge`, `paid`,
 `status`, `adjustments`, `service_lines` and the LX `header_number`.
 
+The eligibility and claim status pairs branch the same way, so they have
+accessors too. `members()` on a 270 or 271 yields whoever the transaction is
+about, with their benefits; `claims()` on a 276 or 277 yields the tracked
+claims. Both hide the subscriber and dependent branch the same way `claims()`
+does on an 837:
+
+```python
+for member in eligibility.members():
+    print(member.name, member.is_dependent, member.service_type_codes)
+
+for claim in status.claims():
+    print(claim.trace_number, claim.charge, claim.paid)
+```
+
+A tracked claim reads its charge from AMT on an inquiry and from STC on a
+response, so the caller does not have to know which it is holding.
+
 ## CLI
 
 ```shell
