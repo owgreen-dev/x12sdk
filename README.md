@@ -338,6 +338,10 @@ ruff check src
 pytest --cov
 ```
 
+`src/tests/audit/` is a suite of generic detectors, one per bug class that has
+shipped here, run over every transaction set on every commit; it is described,
+limits included, in [repo-docs/AUDIT.md](repo-docs/AUDIT.md).
+
 Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) (Apache-2.0,
 DCO sign-off, no copyrighted standards text, no real PHI). To add a
 transaction set, see [repo-docs/NEW_TRANSACTION.md](repo-docs/NEW_TRANSACTION.md);
