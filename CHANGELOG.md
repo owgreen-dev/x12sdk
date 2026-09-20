@@ -53,6 +53,9 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   counting payer-side groups (`CO`, `OA`, `PI`) by default and distinct claims
   rather than occurrences. Amounts stay `Decimal` throughout, so totals are
   exact. `to_dataframe()` is available with the new `pandas` extra.
+- `iter_adjustments()` reaches claims through the transaction's own `claims()`
+  accessor rather than walking loops itself, so there is one definition of how
+  to reach a claim in an 835 and one place for it to be wrong.
 - `categorize()` groups reason codes into analysis categories (eligibility,
   authorization, duplicate, timely filing, coordination of benefits and
   others). **No X12/WPC code-list text ships with x12sdk** — the descriptions

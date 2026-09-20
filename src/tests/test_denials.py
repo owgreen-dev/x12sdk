@@ -292,3 +292,34 @@ def test_a2_and_42_stay_uncategorized_on_purpose():
     mapping = category_map()
     assert "A2" not in mapping
     assert "42" not in mapping
+
+
+def test_iter_adjustments_goes_through_the_claims_accessor(tmp_path):
+    """
+    There should be one definition of how to reach a claim in an 835, not two.
+    A stand-in whose ``claims()`` is empty must leave ``iter_adjustments`` with
+    nothing to report; if it still finds adjustments, it is walking the loops
+    itself again and the two traversals can drift apart.
+    """
+    from x12sdk.generate import generate_835
+
+    path = tmp_path / "generated.835"
+    path.write_text(generate_835(seed=3, claims=4))
+    with X12ModelReader(str(path)) as reader:
+        transaction = next(iter(reader.models()))
+
+    assert list(iter_adjustments(transaction)), "fixture has no adjustments"
+
+    class NoClaims:
+        """Delegates to the real transaction, but reports no claims."""
+
+        def __init__(self, wrapped):
+            self._wrapped = wrapped
+
+        def __getattr__(self, name):
+            return getattr(self._wrapped, name)
+
+        def claims(self):
+            return iter(())
+
+    assert list(iter_adjustments(NoClaims(transaction))) == []
