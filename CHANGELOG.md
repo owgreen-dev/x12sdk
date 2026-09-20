@@ -12,8 +12,16 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   same subscriber/dependent branch as the 837, so generated files contain both
   by default. One `EligibilitySpec` builds an inquiry and the response to it,
   which is usually what a test fixture wants.
-- Six generated eligibility files added to the sample corpus, which the
-  round-trip sweep now covers (72 files to 78).
+- **`generate_276()` and `generate_277()`** — synthetic claim status
+  inquiries and responses. They share a five-level hierarchy, one deeper than
+  eligibility, and carry the same subscriber/dependent branch, so generated
+  files contain both by default. The inquiry states what was billed and the
+  response answers with an STC status; on one seed the pair describes the same
+  people and the same claims, because the demographics only the 276 renders
+  are still drawn for both.
+- Twelve generated files added to the sample corpus, which the round-trip
+  sweep now covers (72 files to 84): six eligibility and six claim status,
+  each covering subscriber-only, dependent-only and mixed.
 
 ### Fixed
 - `validate_hierarchy_ids` (270, 271) required every HL segment to be parented
