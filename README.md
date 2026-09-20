@@ -1,7 +1,47 @@
 # x12sdk
 
-Typed [Pydantic v2](https://docs.pydantic.dev/) models and a streaming SDK/CLI
-for HIPAA ASC X12 5010 health care transactions.
+Synthetic HIPAA X12 claims, remittances, eligibility and enrollment files with
+no PHI in them, and typed [Pydantic v2](https://docs.pydantic.dev/) models to
+parse, validate and write them.
+
+There is no shareable corpus of real X12: every 837 claim and 835 remittance
+carries protected health information, which is why nobody builds on X12
+casually. x12sdk generates valid files from a seed instead.
+
+```python
+from x12sdk.generate import generate_835
+
+print(generate_835(seed=7, claims=2, payer_name="EXAMPLE HEALTH PLAN",
+                   payee_name="EXAMPLE MEDICAL GROUP"))
+```
+
+```
+ISA*00*          *00*          *30*SYNTHETICPAYER *30*SYNTHETICPROV  *260101*1200*^*00501*000000001*0*T*:~
+GS*HP*SYNTHETICPAYER*SYNTHETICPROV*20260101*1200*1*X*005010X221A1~
+ST*835*0001~
+BPR*I*1725.90*C*CHK~
+TRN*1*4942859576*0181590830~
+N1*PR*EXAMPLE HEALTH PLAN~
+N3*615 MAIN BLVD~
+N4*GREENVILLE*OH*41544~
+N1*PE*EXAMPLE MEDICAL GROUP*XX*2860913906~
+LX*1~
+CLP*PCN000001*1*1797.81*1258.47**CH*710085427120~
+NM1*QC*1*DOE*JAMES****MI*X410965605~
+SVC*HC:71046*1797.81*1258.47**1~
+CAS*CO*45*539.34~
+...
+SE*19*0001~
+GE*1*1~
+IEA*1*000000001~
+```
+
+The same seed reproduces the same bytes. Every file parses through the
+library's own validators, round-trips byte for byte, and carries both the
+subscriber and the dependent branch of the hierarchy, the place real code
+loses claims. All eight supported transaction sets generate; scenarios can be
+described exactly, from a denial pattern to a multi-employer enrollment. See
+[Generating synthetic files](#generating-synthetic-files).
 
 ![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
@@ -13,14 +53,14 @@ for HIPAA ASC X12 5010 health care transactions.
 
 Supported transaction sets:
 
-| Set | Implementation | What it is |
-|---|---|---|
-| 837P | 005010X222A2 | Professional claim |
-| 837I | 005010X223A3 | Institutional claim |
-| 835 | 005010X221A1 | Claim payment / remittance advice |
-| 834 | 005010X220A1 | Benefit enrollment and maintenance |
-| 270 / 271 | 005010X279A1 | Eligibility inquiry / response |
-| 276 / 277 | 005010X212 | Claim status inquiry / response |
+| Set | Implementation | What it is | Parse | Generate | Accessors |
+|---|---|---|---|---|---|
+| 837P | 005010X222A2 | Professional claim | yes | `generate_837p` | `claims()`, `subscribers()` |
+| 837I | 005010X223A3 | Institutional claim | yes | `generate_837i` | `claims()`, `subscribers()` |
+| 835 | 005010X221A1 | Claim payment / remittance advice | yes | `generate_835` | `claims()` |
+| 834 | 005010X220A1 | Benefit enrollment and maintenance | yes | `generate_834` | |
+| 270 / 271 | 005010X279A1 | Eligibility inquiry / response | yes | `generate_270` / `generate_271` | `members()` |
+| 276 / 277 | 005010X212 | Claim status inquiry / response | yes | `generate_276` / `generate_277` | `claims()` |
 
 Every transaction is parsed into a validated Pydantic model and can be
 serialized back to X12; the test suite asserts that round trip reproduces
