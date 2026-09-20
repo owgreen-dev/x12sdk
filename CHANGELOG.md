@@ -4,7 +4,7 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
-## Unreleased
+## 1.2.0 — 2026-09-19
 
 ### Added
 - **`generate_270()` and `generate_271()`** — synthetic eligibility inquiries
