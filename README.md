@@ -69,6 +69,36 @@ with X12ModelReader("/home/edi/270.x12") as r:
         model.x12()           # serialize back to X12
 ```
 
+## Reaching the claims
+
+The models mirror the X12 loop hierarchy, so a claim is several levels down.
+On an 837 it is down one of *two* paths, because a claim sits under the
+subscriber when the patient is the subscriber and under a dependent when they
+are not:
+
+```
+loop_2000a[i].loop_2000b[j].loop_2300[k]                  patient = subscriber
+loop_2000a[i].loop_2000b[j].loop_2000c[l].loop_2300[k]    patient = dependent
+```
+
+Both are ordinary. Code written against one runs happily on a file that uses
+the other and reports no claims at all, so `claims()` walks both and yields a
+flat record. It is a generator, so a large file is never materialized.
+
+```python
+for claim in model.claims():
+    print(claim.patient_control_number, claim.charge, claim.patient_name)
+```
+
+Each record carries the claim plus the context you would otherwise re-derive:
+`billing_provider`, `subscriber`, `payer`, `patient`, `is_dependent` and
+`relationship`. `patient` already points at whoever was treated, so you never
+need to know which branch the claim came from. `subscribers()` yields the
+subscribers and their dependents.
+
+`claims()` on an 835 yields the claim payments, each with `charge`, `paid`,
+`status`, `adjustments`, `service_lines` and the LX `header_number`.
+
 ## CLI
 
 ```shell

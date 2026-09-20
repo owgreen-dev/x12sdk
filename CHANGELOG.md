@@ -29,6 +29,19 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   numbering, parent links and child flags are assigned by the builder, and
   the claim charge is checked against the service line total that the model
   requires.
+- **`claims()` and `subscribers()`** on the 835, 837P and 837I transaction
+  models, in the new `x12sdk.access` module. Answers the upstream request in
+  LinuxForHealth/x12#77. On an 837 a claim sits under the subscriber when the
+  patient is the subscriber and under a dependent when they are not; code
+  written against one path runs without error on a file using the other and
+  reports no claims, so this is a correctness trap rather than an
+  inconvenience. `claims()` walks both and yields a flat, frozen record
+  carrying the claim with its billing provider, subscriber, payer, patient,
+  `is_dependent` and relationship. `patient` already points at whoever was
+  treated. Yielded lazily, so a large file is not materialized. The 835
+  version yields charge, payment, status, adjustments, service lines and the
+  LX header number. Verified against the whole corpus by counting CLM, CLP and
+  HL segments in the raw files and requiring the accessors to match.
 - Six generated files added to the sample corpus, which the round-trip sweep
   now covers (66 files to 72): three remittances and three claim submissions,
   the latter covering the subscriber branch, the dependent branch and a mix.
