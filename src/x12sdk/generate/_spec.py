@@ -175,6 +175,74 @@ class SubmissionSpec:
         )
 
 
+# --- eligibility (270 / 271) ------------------------------------------------
+
+#: EB01 / benefit status. "1" is active coverage; "6" inactive.
+BENEFIT_STATUS_CODES = ("1", "2", "3", "4", "5", "6", "7", "8")
+
+
+@dataclass(frozen=True)
+class BenefitSpec:
+    """
+    One line of coverage: a question on a 270, an answer on a 271.
+
+    The same description serves both, so an inquiry and the response to it can
+    be generated as a matched pair from one specification.
+    """
+
+    service_type: str = "30"
+    status: str = "1"
+    coverage_level: Optional[str] = None
+    plan_description: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.service_type:
+            raise ValueError('service_type is required; "30" is whole-plan coverage')
+        if self.status not in BENEFIT_STATUS_CODES:
+            raise ValueError(
+                f"status must be one of {BENEFIT_STATUS_CODES}, got {self.status!r}"
+            )
+
+
+@dataclass(frozen=True)
+class MemberSpec:
+    """
+    One person an eligibility transaction is about.
+
+    As on an 837, the person is either the subscriber or a dependent of one,
+    and the two sit at different depths of the hierarchy. Unlike an 837 the
+    payload is coverage rather than claims, so this is a separate type from
+    :class:`PatientSpec`.
+    """
+
+    benefits: Sequence[BenefitSpec] = field(default_factory=tuple)
+    dependent: bool = False
+    relationship: str = "19"
+    member_id: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.benefits:
+            object.__setattr__(self, "benefits", (BenefitSpec(),))
+        if self.dependent and self.relationship not in PATIENT_RELATIONSHIP_CODES:
+            raise ValueError(
+                f"relationship must be one of {PATIENT_RELATIONSHIP_CODES}, "
+                f"got {self.relationship!r}"
+            )
+
+
+@dataclass(frozen=True)
+class EligibilitySpec:
+    """A whole 270 or 271: one payer, one provider, a set of members."""
+
+    members: Sequence[MemberSpec]
+    payer_name: Optional[str] = None
+    provider_name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.members:
+            raise ValueError("an eligibility transaction must have at least one member")
+
+
 def denial(group: str, reason: str, amount) -> AdjustmentSpec:
     """
     Shorthand for a payer-side adjustment.
@@ -192,8 +260,12 @@ def patient_responsibility(reason: str, amount) -> AdjustmentSpec:
 
 __all__ = [
     "AdjustmentSpec",
+    "BENEFIT_STATUS_CODES",
+    "BenefitSpec",
     "ClaimSpec",
+    "EligibilitySpec",
     "GROUP_CODES",
+    "MemberSpec",
     "PATIENT_RELATIONSHIP_CODES",
     "PatientSpec",
     "RemittanceSpec",

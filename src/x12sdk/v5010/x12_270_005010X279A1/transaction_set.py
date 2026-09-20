@@ -72,6 +72,15 @@ class EligibilityInquiry(X12SegmentGroup):
         Validations are limited to checks that are not covered within a segment or field scope.
 
         :param values: The raw, unvalidated transaction data.
+
+        Each HL names its own parent, so that is what is checked. An earlier
+        version also required every HL to be parented by the *previous* HL in
+        the file, which is not an X12 rule: it made more than one subscriber
+        per information receiver impossible to express, because the second
+        subscriber would have had to be parented by the first. A provider
+        checking eligibility for a list of patients is the ordinary use of a
+        270, and no sample in the corpus has more than one subscriber, so the
+        contradiction never fired.
         """
         values = self.__dict__
 
@@ -85,35 +94,21 @@ class EligibilityInquiry(X12SegmentGroup):
             # info source does not have a parent id, since it starts a new hierarchy - this is validated at the
             # segment level
             source_id, _ = get_ids(info_source.hl_segment)
-            previous_id: int = source_id
-
             for info_receiver in info_source.loop_2000b:
                 receiver_id, receiver_parent_id = get_ids(info_receiver.hl_segment)
-
-                if receiver_parent_id != previous_id:
-                    raise ValueError(f"Invalid receiver parent id {receiver_parent_id}")
 
                 if receiver_parent_id != source_id:
                     raise ValueError(
                         f"receiver parent id {receiver_parent_id} != source id {source_id}"
                     )
 
-                previous_id = receiver_id
-
                 for subscriber in info_receiver.loop_2000c:
                     subscriber_id, subscriber_parent_id = get_ids(subscriber.hl_segment)
-
-                    if subscriber_parent_id != previous_id:
-                        raise ValueError(
-                            f"Invalid subscriber parent id {subscriber_parent_id}"
-                        )
 
                     if subscriber_parent_id != receiver_id:
                         raise ValueError(
                             f"subscriber parent id {subscriber_parent_id} != receiver id {receiver_id}"
                         )
-
-                    previous_id = subscriber_id
 
                     if not subscriber.loop_2000d:
                         continue
@@ -123,15 +118,9 @@ class EligibilityInquiry(X12SegmentGroup):
                             dependent.hl_segment
                         )
 
-                        if dependent_parent_id != previous_id:
-                            raise ValueError(
-                                f"Invalid dependent parent id {dependent_parent_id}"
-                            )
-
                         if dependent_parent_id != subscriber_id:
                             raise ValueError(
                                 f"dependent parent id {dependent_parent_id} != subscriber id {subscriber_id}"
                             )
 
-                        previous_id = dependent_id
         return self

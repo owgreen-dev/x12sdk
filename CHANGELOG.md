@@ -4,6 +4,32 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Added
+- **`generate_270()` and `generate_271()`** — synthetic eligibility inquiries
+  and responses. Both sit on the same four-level hierarchy, and it carries the
+  same subscriber/dependent branch as the 837, so generated files contain both
+  by default. One `EligibilitySpec` builds an inquiry and the response to it,
+  which is usually what a test fixture wants.
+- Six generated eligibility files added to the sample corpus, which the
+  round-trip sweep now covers (72 files to 78).
+
+### Fixed
+- `validate_hierarchy_ids` (270, 271) required every HL segment to be parented
+  by the *previous* HL in the file, which is not an X12 rule. It made more than
+  one subscriber per information receiver impossible: the second subscriber
+  would have had to be parented by the first, while another check in the same
+  validator required the information receiver. A provider checking eligibility
+  for a list of patients is the ordinary use of a 270. The real parent-identity
+  rules are kept, so nothing that validated before stops validating. No sample
+  in the corpus has more than one subscriber, which is why it never fired.
+- `_validate_duplicate_codes` in `x12sdk.validators` read `ref_segment` with a
+  `get()` default, but on a model built in Python the key is always present and
+  set to `None`; only the parser pre-seeds a list. Any constructed loop that
+  left REF out raised `TypeError`. This affects every transaction set using the
+  duplicate-REF and duplicate-AMT checks, not only eligibility.
+
 ## 1.1.0 — 2026-09-19
 
 ### Added
