@@ -305,6 +305,57 @@ class ClaimStatusSpec:
             raise ValueError("a claim status transaction needs at least one patient")
 
 
+# --- benefit enrollment (834) -----------------------------------------------
+
+
+@dataclass(frozen=True)
+class CoverageSpec:
+    """One HD coverage line on an enrollment: what the member is enrolled in."""
+
+    insurance_line: str = "HLT"
+    maintenance_type: str = "021"
+    coverage_level: Optional[str] = None
+    plan_description: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class EnrolleeSpec:
+    """
+    One member on an 834.
+
+    The 834 has no HL hierarchy. A dependent is a separate member record
+    marked by INS01 rather than a loop nested under the subscriber, so
+    ``dependent`` changes the record rather than where it sits.
+    """
+
+    coverages: Sequence[CoverageSpec] = field(default_factory=tuple)
+    dependent: bool = False
+    relationship: str = "19"
+    member_id: Optional[str] = None
+    benefit_status: str = "A"
+    maintenance_type: str = "021"
+
+    def __post_init__(self) -> None:
+        if not self.coverages:
+            object.__setattr__(self, "coverages", (CoverageSpec(),))
+        if not self.dependent and self.relationship != "18":
+            # INS02 is 18, self, whenever the member is the subscriber
+            object.__setattr__(self, "relationship", "18")
+
+
+@dataclass(frozen=True)
+class EnrollmentSpec:
+    """A whole 834: one sponsor, one payer, a roster of members."""
+
+    enrollees: Sequence[EnrolleeSpec]
+    sponsor_name: Optional[str] = None
+    payer_name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.enrollees:
+            raise ValueError("an enrollment must have at least one member")
+
+
 def denial(group: str, reason: str, amount) -> AdjustmentSpec:
     """
     Shorthand for a payer-side adjustment.
@@ -326,7 +377,10 @@ __all__ = [
     "BenefitSpec",
     "ClaimSpec",
     "ClaimStatusSpec",
+    "CoverageSpec",
     "EligibilitySpec",
+    "EnrolleeSpec",
+    "EnrollmentSpec",
     "GROUP_CODES",
     "MemberSpec",
     "PATIENT_RELATIONSHIP_CODES",

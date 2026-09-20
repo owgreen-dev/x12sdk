@@ -19,9 +19,22 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   response answers with an STC status; on one seed the pair describes the same
   people and the same claims, because the demographics only the 276 renders
   are still drawn for both.
-- Twelve generated files added to the sample corpus, which the round-trip
-  sweep now covers (72 files to 84): six eligibility and six claim status,
-  each covering subscriber-only, dependent-only and mixed.
+- **`generate_834()`** — synthetic benefit enrollment. The 834 is the one
+  supported transaction with no HL hierarchy: a dependent is a separate member
+  record told apart by INS01 and INS02 rather than a loop nested under the
+  subscriber, and both kinds appear by default. **Every supported transaction
+  set can now be generated.**
+- Fifteen generated files added to the sample corpus, which the round-trip
+  sweep now covers (72 files to 87): six eligibility, six claim status and
+  three enrollment, each covering subscriber-only, dependent-only and mixed.
+
+### Changed
+- **The 834 now validates SE01.** `validate_segment_count` was commented out on
+  that transaction set alone, so it was the only one that accepted a wrong
+  segment count in silence; every other set has always rejected it. All ten
+  inherited 834 samples already carry a correct count, so nothing in the corpus
+  changes. If you parse 834 files from a partner who miscounts SE01, they will
+  now be rejected rather than parsed.
 
 ### Fixed
 - `validate_hierarchy_ids` (270, 271) required every HL segment to be parented
