@@ -1629,38 +1629,38 @@ class HiSegment(X12Segment):
     """
 
     segment_name: X12SegmentName = X12SegmentName.HI
-    health_care_code_1: List = Field(json_schema_extra={"is_component": True})
-    health_care_code_2: Optional[List] = Field(
+    health_care_code_1: List[str] = Field(json_schema_extra={"is_component": True})
+    health_care_code_2: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_3: Optional[List] = Field(
+    health_care_code_3: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_4: Optional[List] = Field(
+    health_care_code_4: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_5: Optional[List] = Field(
+    health_care_code_5: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_6: Optional[List] = Field(
+    health_care_code_6: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_7: Optional[List] = Field(
+    health_care_code_7: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_8: Optional[List] = Field(
+    health_care_code_8: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_9: Optional[List] = Field(
+    health_care_code_9: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_10: Optional[List] = Field(
+    health_care_code_10: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_11: Optional[List] = Field(
+    health_care_code_11: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_12: Optional[List] = Field(
+    health_care_code_12: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
 
@@ -1837,7 +1837,10 @@ class HsdSegment(X12Segment):
             values.get("quantity"),
         )
 
-        if not any(quantity_fields):
+        # HSD01 and HSD02 are a conditional pair: if either is present the
+        # other is required. An HSD carrying only period information (HSD03
+        # onward) has neither, and is valid. The check used to reject that.
+        if any(quantity_fields) and not all(quantity_fields):
             raise ValueError("Quantity requires a qualifier and value")
 
         return self

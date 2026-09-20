@@ -20,7 +20,7 @@ from pydantic import (
     model_validator,
 )
 
-from x12sdk.models import X12Segment, X12SegmentName
+from x12sdk.models import X12Delimiters, X12Segment, X12SegmentName
 from x12sdk.support import parse_interchange_date, parse_x12_date
 from x12sdk.validators import validate_date_field
 
@@ -1502,26 +1502,26 @@ class HiSegment(X12Segment):
     """
 
     segment_name: X12SegmentName = X12SegmentName.HI
-    health_care_code_1: List = Field(json_schema_extra={"is_component": True})
-    health_care_code_2: Optional[List] = Field(
+    health_care_code_1: List[str] = Field(json_schema_extra={"is_component": True})
+    health_care_code_2: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_3: Optional[List] = Field(
+    health_care_code_3: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_4: Optional[List] = Field(
+    health_care_code_4: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_5: Optional[List] = Field(
+    health_care_code_5: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_6: Optional[List] = Field(
+    health_care_code_6: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_7: Optional[List] = Field(
+    health_care_code_7: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
-    health_care_code_8: Optional[List] = Field(
+    health_care_code_8: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
     )
 
@@ -1674,7 +1674,10 @@ class HsdSegment(X12Segment):
             values.get("quantity"),
         )
 
-        if not any(quantity_fields):
+        # HSD01 and HSD02 are a conditional pair: if either is present the
+        # other is required. An HSD carrying only period information (HSD03
+        # onward) has neither, and is valid. The check used to reject that.
+        if any(quantity_fields) and not all(quantity_fields):
             raise ValueError("Quantity requires a qualifier and value")
 
         return self
@@ -1844,19 +1847,23 @@ class IsaSegment(X12Segment):
         parse_interchange_date
     )
 
-    def x12(self) -> str:
+    def x12(self, custom_delimiters: X12Delimiters = None) -> str:
         """
         Overriden to support formatting the interchange date as yymmdd ( %y%m%d )
         """
-        x12_string: str = super().x12()
-        segment_fields = x12_string.split(self.delimiters.element_separator)
+        # As in the 5010 segment: default delimiters unless told otherwise. This
+        # used to read self.delimiters, which is None on any constructed
+        # segment, so a built ISA validated but could not be rendered.
+        delimiters = custom_delimiters or X12Delimiters()
+        x12_string: str = super().x12(custom_delimiters)
+        segment_fields = x12_string.split(delimiters.element_separator)
 
         interchange_date = datetime.datetime.strptime(
             segment_fields[9], "%Y%m%d"
         ).date()
         segment_fields[9] = interchange_date.strftime("%y%m%d")
 
-        return self.delimiters.element_separator.join(segment_fields)
+        return delimiters.element_separator.join(segment_fields)
 
 
 class K3Segment(X12Segment):
