@@ -32,7 +32,10 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
+# DataFrame helpers in x12sdk.denials; the rest of the package needs nothing extra.
+pandas = ["pandas>=2.0"]
 dev = [
+    "pandas>=2.0",
     "pytest>=7.1",
     "pytest-cov>=4.0",
     "ruff>=0.6",
