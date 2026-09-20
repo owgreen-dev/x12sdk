@@ -10,7 +10,7 @@ from pydantic import Field, model_validator
 
 from x12sdk.access import ClaimSubmissionAccess
 from x12sdk.models import X12SegmentGroup
-from x12sdk.validators import validate_segment_count
+from x12sdk.validators import validate_hl_linkage, validate_segment_count
 
 from .loops import Footer, Header, Loop1000A, Loop1000B, Loop2000A
 
@@ -27,3 +27,4 @@ class HealthCareClaimInstitutional(ClaimSubmissionAccess, X12SegmentGroup):
     footer: Footer
 
     _validate_segment_count = model_validator(mode="after")(validate_segment_count)
+    _validate_hl_linkage = model_validator(mode="after")(validate_hl_linkage)
