@@ -315,9 +315,14 @@ from x12sdk.generate import generate_834
 roster = generate_834(seed=3, enrollees=20)
 ```
 
-Seven of the eight supported transaction sets can be generated: 835, 837P,
-834, 270, 271, 276 and 277. The institutional claim, 837I, is parsed and
-has accessors but has no generator yet.
+All eight supported transaction sets can be generated. The institutional
+claim takes the same specification as the professional one:
+
+```python
+from x12sdk.generate import generate_837i
+
+submission = generate_837i(seed=7, claims=25)
+```
 
 ## Migrating from `linuxforhealth-x12`
 
