@@ -43,6 +43,7 @@ from x12sdk.generate import (
     generate_277,
     generate_834,
     generate_835,
+    generate_837i,
     generate_837p,
 )
 from x12sdk.io import X12ModelReader
@@ -115,6 +116,18 @@ CASES = {
             )
             for _ in range(THREE)
         ],
+    ),
+    "837I": lambda: generate_837i(
+        seed=3,
+        claims=SubmissionSpec(
+            patients=[
+                PatientSpec(
+                    claims=[_claim("30.00") for _ in range(THREE)],
+                    dependent=i % 2 == 1,
+                )
+                for i in range(THREE)
+            ]
+        ),
     ),
     "837P": lambda: generate_837p(
         seed=3,

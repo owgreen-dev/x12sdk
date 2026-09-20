@@ -55,6 +55,7 @@ from typing import Optional, Sequence, Union
 from ..io import write_transactions
 from ._834 import build_834, random_enrollees
 from ._835 import build_835, random_claims
+from ._837i import build_837i
 from ._837p import build_837p, claim_specs_to_patients, random_patients
 from ._claim_status import build_276, build_277, random_status_patients
 from ._eligibility import build_270, build_271, random_members
@@ -415,6 +416,54 @@ def generate_834(
     )
 
 
+def generate_837i(
+    *,
+    seed: int = 0,
+    claims: Union[int, Sequence[ClaimSpec], SubmissionSpec] = 5,
+    dependent_rate: float = 0.3,
+    billing_provider_name: Optional[str] = None,
+    payer_name: Optional[str] = None,
+    submitter_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPROV",
+    receiver_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 837I institutional claim submission.
+
+    Takes the same specification as :func:`generate_837p`; a ServiceLineSpec's
+    procedure becomes the SV2 procedure composite, billed under a revenue
+    code. The subscriber/dependent branch is the same, and both appear by
+    default.
+
+    :return: The interchange, ISA through IEA.
+    """
+    if isinstance(claims, SubmissionSpec):
+        spec = claims
+    else:
+        values = ValueFactory(seed)
+        if isinstance(claims, int):
+            if claims < 1:
+                raise ValueError("claims must be at least 1")
+            patients = random_patients(claims, values, dependent_rate=dependent_rate)
+        else:
+            patients = claim_specs_to_patients(
+                list(claims), values, dependent_rate=dependent_rate
+            )
+        spec = SubmissionSpec(
+            patients=patients,
+            billing_provider_name=billing_provider_name,
+            payer_name=payer_name,
+            submitter_name=submitter_name,
+        )
+    return write_transactions(
+        [build_837i(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "BENEFIT_STATUS_CODES",
@@ -441,6 +490,7 @@ __all__ = [
     "build_277",
     "build_834",
     "build_835",
+    "build_837i",
     "build_837p",
     "claim_specs_to_patients",
     "denial",
@@ -450,6 +500,7 @@ __all__ = [
     "generate_277",
     "generate_834",
     "generate_835",
+    "generate_837i",
     "generate_837p",
     "patient_responsibility",
     "random_claims",
