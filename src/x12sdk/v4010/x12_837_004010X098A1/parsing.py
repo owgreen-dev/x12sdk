@@ -345,6 +345,15 @@ def set_patient_name_loop(context: X12ParserContext, segment_data: Dict) -> None
     :param context: The X12Parsing context which contains the current loop and transaction record.
     :param segment_data: The current segment data
     """
+    # In this implementation NM1*QC also opens loop 2330C, Other Payer Patient
+    # Information, inside a COB 2320 loop. Every matching handler runs, in
+    # definition order, so without this guard the QC that belongs to 2330C
+    # overwrote the dependent's 2010CA name loop and reset the loop context
+    # before set_other_subscriber_entities_loop could route it. A COB claim
+    # for a dependent with other-payer patient information could not parse.
+    if "loop_2320" in context.loop_name or "loop_2330" in context.loop_name:
+        return
+
     context.patient_record[TransactionLoops.PATIENT_LOOP_NAME] = {"ref_segment": []}
     patient_name_loop = context.patient_record[TransactionLoops.PATIENT_LOOP_NAME]
     context.set_loop_context(TransactionLoops.PATIENT_LOOP_NAME, patient_name_loop)
@@ -537,8 +546,19 @@ def set_other_subscriber_entities_loop(
             )
 
         other_subscriber = _get_other_subscriber(context)
-        other_subscriber[loop_name] = {"ref_segment": []}
-        context.set_loop_context(loop_name, other_subscriber[loop_name])
+        if (
+            loop_name
+            == TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_PATIENT_INFORMATION
+        ):
+            # In this 4010 implementation loop 2330C is Other Payer Patient
+            # Information, and the model declares it List[Loop2330C]. Assigning
+            # here kept only the last occurrence. The other 2330 loops occur
+            # once and stay dicts.
+            other_subscriber.setdefault(loop_name, []).append({"ref_segment": []})
+            context.set_loop_context(loop_name, other_subscriber[loop_name][-1])
+        else:
+            other_subscriber[loop_name] = {"ref_segment": []}
+            context.set_loop_context(loop_name, other_subscriber[loop_name])
 
 
 @match("LX")

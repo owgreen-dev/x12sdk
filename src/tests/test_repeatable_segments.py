@@ -123,3 +123,82 @@ def test_segment_group_wraps_single_dict_for_list_field():
     group = Notes(nte_segment={"note_reference_code": "ADD", "description": "x"})
     assert len(group.nte_segment) == 1
     assert group.nte_segment[0].description == "x"
+
+
+# --- repeating entity loops whose initializer assigned instead of appended --
+#
+# Found by the audit suite's structural leg on its first run. Each field below
+# was already declared List[...] in its model, so a single occurrence looked
+# correct (X12SegmentGroup wraps a lone record for a list field) and only a
+# second occurrence exposed the overwrite. No inherited sample repeats any of
+# them.
+
+
+def test_834_member_keeps_every_employer():
+    """Loop 2100D repeats, up to three employers per member."""
+    model = _model("834_005010X220A1/two-employers.834")
+    employers = model.loop_2000[0].loop_2100d or []
+    assert [e.nm1_segment.name_last_or_organization_name for e in employers] == [
+        "EXAMPLE EMPLOYER",
+        "SECOND EMPLOYER",
+    ]
+
+
+def _cob_2330c(model):
+    claims = [
+        claim
+        for loop_2000a in model.loop_2000a
+        for loop_2000b in loop_2000a.loop_2000b
+        for claim in (loop_2000b.loop_2300 or [])
+        + [
+            claim
+            for loop_2000c in (loop_2000b.loop_2000c or [])
+            for claim in (loop_2000c.loop_2300 or [])
+        ]
+    ]
+    return [
+        entity
+        for claim in claims
+        for other in (claim.loop_2320 or [])
+        for entity in (other.loop_2330c or [])
+    ]
+
+
+def test_837p_keeps_every_other_payer_referring_provider():
+    """5010 X222A2 loop 2330C, Other Payer Referring Provider, repeats."""
+    model = _model("837_005010X222A2/cob-two-other-payer-referring-providers.837")
+    assert [
+        e.nm1_segment.name_last_or_organization_name for e in _cob_2330c(model)
+    ] == [
+        "BRYHT",
+        "SMYTH",
+    ]
+
+
+def test_4010_837_keeps_every_other_payer_patient_and_the_patient_name():
+    """
+    4010 X098A1 loop 2330C is Other Payer Patient Information, opened by
+    NM1*QC, the same segment that opens the dependent's 2010CA name loop.
+    Every matching handler runs, so the unguarded 2010CA handler used to
+    overwrite the dependent's name and reset the loop context before the
+    2330C handler could route the segment. The claim could not parse at all.
+    """
+    model = _model(
+        "837_004010X098A1/dependent-commercial-insurance-cob-two-patients.837"
+    )
+    assert [e.nm1_segment.name_first for e in _cob_2330c(model)] == ["ONE", "TWO"]
+    dependent = model.loop_2000a[0].loop_2000b[0].loop_2000c[0].loop_2010ca
+    assert dependent.nm1_segment.name_first != "TWO"
+    assert dependent.n3_segment is not None, "the dependent's address survived"
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        "834_005010X220A1/two-employers.834",
+        "837_005010X222A2/cob-two-other-payer-referring-providers.837",
+        "837_004010X098A1/dependent-commercial-insurance-cob-two-patients.837",
+    ],
+)
+def test_repeating_entity_loop_samples_round_trip(relative_path):
+    assert_eq_model(os.path.join(resources_directory, relative_path))

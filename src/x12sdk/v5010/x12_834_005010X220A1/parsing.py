@@ -288,8 +288,15 @@ def set_member_2100d_to_2100g_loop(
     else:
         raise ValueError(f"Unable to parse entity identifier {entity_identifier}")
 
-    member_loop[loop_name] = {}
-    context.set_loop_context(loop_name, member_loop[loop_name])
+    if loop_name == TransactionLoops.MEMBER_EMPLOYER:
+        # Loop 2100D repeats: a member may list up to three employers, and
+        # the model declares it List[Loop2100D]. Assigning here kept only the
+        # last one. The other three entity loops occur once and stay dicts.
+        member_loop.setdefault(loop_name, []).append({})
+        context.set_loop_context(loop_name, member_loop[loop_name][-1])
+    else:
+        member_loop[loop_name] = {}
+        context.set_loop_context(loop_name, member_loop[loop_name])
 
 
 @match("NM1", conditions={"entity_identifier_code": "45"})
