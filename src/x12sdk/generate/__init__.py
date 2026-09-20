@@ -53,6 +53,7 @@ import datetime
 from typing import Optional, Sequence, Union
 
 from ..io import write_transactions
+from ._834 import build_834, random_enrollees
 from ._835 import build_835, random_claims
 from ._837p import build_837p, claim_specs_to_patients, random_patients
 from ._claim_status import build_276, build_277, random_status_patients
@@ -65,7 +66,10 @@ from ._spec import (
     BenefitSpec,
     ClaimSpec,
     ClaimStatusSpec,
+    CoverageSpec,
     EligibilitySpec,
+    EnrolleeSpec,
+    EnrollmentSpec,
     MemberSpec,
     PatientSpec,
     RemittanceSpec,
@@ -358,13 +362,69 @@ def generate_277(
     )
 
 
+def generate_834(
+    *,
+    seed: int = 0,
+    enrollees: Union[int, Sequence[EnrolleeSpec], EnrollmentSpec] = 5,
+    dependent_rate: float = 0.3,
+    sponsor_name: Optional[str] = None,
+    payer_name: Optional[str] = None,
+    sender_id: str = "SYNTHSPONSOR",
+    receiver_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 834 benefit enrollment and maintenance transaction.
+
+    The 834 has no HL hierarchy: a dependent is a separate member record told
+    apart by INS01 and INS02, not a loop nested under the subscriber. Both
+    kinds of record appear by default so code reading an 834 can be tested on
+    each.
+
+    :param seed: Reproduces the same file when unchanged.
+    :param enrollees: A number of members to invent, specifications to follow,
+        or a whole :class:`EnrollmentSpec`.
+    :param dependent_rate: The share of records marked as a dependent. Ignored
+        when an ``EnrollmentSpec`` is given.
+    :param sponsor_name: The plan sponsor. Defaults to a synthetic name.
+    :param payer_name: Defaults to a synthetic plan name.
+    :param sender_id: ISA06 / GS02.
+    :param receiver_id: ISA08 / GS03.
+    :param control_number: ST02 / SE02, at least 4 characters.
+    :return: The interchange, ISA through IEA.
+    """
+    if isinstance(enrollees, EnrollmentSpec):
+        spec = enrollees
+    else:
+        if isinstance(enrollees, int):
+            if enrollees < 1:
+                raise ValueError("enrollees must be at least 1")
+            enrollees = random_enrollees(
+                enrollees, ValueFactory(seed), dependent_rate=dependent_rate
+            )
+        spec = EnrollmentSpec(
+            enrollees=list(enrollees),
+            sponsor_name=sponsor_name,
+            payer_name=payer_name,
+        )
+    return write_transactions(
+        [build_834(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "BENEFIT_STATUS_CODES",
     "BenefitSpec",
     "ClaimSpec",
     "ClaimStatusSpec",
+    "CoverageSpec",
     "EligibilitySpec",
+    "EnrolleeSpec",
+    "EnrollmentSpec",
     "GROUP_CODES",
     "MemberSpec",
     "PATIENT_RELATIONSHIP_CODES",
@@ -379,6 +439,7 @@ __all__ = [
     "build_271",
     "build_276",
     "build_277",
+    "build_834",
     "build_835",
     "build_837p",
     "claim_specs_to_patients",
@@ -387,10 +448,12 @@ __all__ = [
     "generate_271",
     "generate_276",
     "generate_277",
+    "generate_834",
     "generate_835",
     "generate_837p",
     "patient_responsibility",
     "random_claims",
+    "random_enrollees",
     "random_members",
     "random_patients",
     "random_status_patients",

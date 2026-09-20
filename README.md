@@ -287,6 +287,18 @@ inquiry = generate_276(seed=9, patients=8)
 response = generate_277(seed=9, patients=8)
 ```
 
+Enrollment has no hierarchy to branch on. A dependent on an 834 is a separate
+member record told apart by INS01 and INS02, not a loop nested under the
+subscriber, and both kinds appear by default:
+
+```python
+from x12sdk.generate import generate_834
+
+roster = generate_834(seed=3, enrollees=20)
+```
+
+That completes the set: all eight supported transactions can be generated.
+
 ## Migrating from `linuxforhealth-x12`
 
 | before | after |
