@@ -4,9 +4,27 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
-## Unreleased
+## 2.1.0 — 2026-09-20
+
+### Changed — behaviour
+- **Every hierarchical transaction set now validates HL parent linkage.** Each
+  HL segment's parent id must name the HL it is nested under, and ids must be
+  unique within the transaction. Until now only the 270 and 271 checked this;
+  every 837 implementation and the 276/277 pair accepted a dangling parent or
+  a duplicate id in silence, so a file whose hierarchy could not be walked
+  parsed as if it were fine. Found by the audit suite's mutation leg. All 68
+  HL-bearing samples in the corpus pass the rule, so nothing in the corpus
+  changes. **If you parse partner files with sloppy HL numbering, they will
+  now be rejected**, with a message naming the HL and the parent it claims.
+
 
 ### Added
+- **`generate_837i()`** — synthetic institutional claims, taking the same
+  specification as `generate_837p`. SV2 revenue-code lines with the procedure
+  as a composite, a facility type in CLM05, CL1 admission and status, and a
+  statement date. **All eight supported transaction sets now generate**, which
+  the 1.2.0 notes claimed prematurely. Three generated files join the corpus
+  (92 to 95).
 - **An audit suite**, `src/tests/audit/`, in the ordinary test run. Every bug
   class that has shipped in this codebase is now a generic detector applied to
   every transaction package: seven structural checks comparing what the models
@@ -40,12 +58,6 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 - **A constructed 4010 ISA could not be rendered** (#23): its `x12()` read
   `self.delimiters`, which is `None` on a built segment. It now defaults the
   delimiters as the 5010 segment does.
-
-### Known gap, decision pending
-- No 837 implementation, and neither the 276 nor the 277, validates that an
-  HL segment's parent id names an HL that exists; the 270 and 271 do. Found
-  by the mutation leg and recorded as an expected failure there. Adding the
-  check is a validation tightening across five transaction sets.
 
 ## 2.0.0 — 2026-09-19
 
