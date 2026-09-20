@@ -4,6 +4,49 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Added
+- **An audit suite**, `src/tests/audit/`, in the ordinary test run. Every bug
+  class that has shipped in this codebase is now a generic detector applied to
+  every transaction package: seven structural checks comparing what the models
+  declare against what the parser and validators do; a construction leg that
+  builds every loop and segment from its required fields alone; a repeat-stress
+  leg that writes three of everything and requires every segment back exactly
+  once; and a mutation leg that breaks one invariant in every corpus sample and
+  requires rejection. Backtested against v1.0.0, it flags every defect found
+  by hand this year, by name. See `repo-docs/AUDIT.md`, which also says what it
+  cannot do.
+- `scripts/backtest_audit.sh <tag>` runs the suite against an older tag with
+  that tag's own code and corpus.
+
+### Fixed
+- **Three more repeating loops kept only their last occurrence** (#22), found
+  by the suite's structural leg on its first run: 834 loop 2100D (member
+  employer), 837P loop 2330C (other payer referring provider) and 4010 837
+  loop 2330C (other payer patient information). Each was already declared a
+  list, so a single occurrence looked correct and only a second exposed the
+  overwrite. Not breaking.
+- **A 4010 837 claim for a dependent with other-payer patient information could
+  not parse** (#22). `NM1*QC` opens both loop 2330C and the dependent's 2010CA
+  name loop there, and every matching handler runs in definition order; the
+  unguarded 2010CA handler overwrote the dependent's name loop. Guarded.
+- **`HiSegment` validated nothing inside its composites** (#23): all twelve
+  fields were a bare `List`. They are `List[str]`; the corpus round trip is
+  unchanged.
+- **HSD rejected a segment with neither quantity nor qualifier** (#23). HSD01
+  and HSD02 are a conditional pair; a segment carrying only period information
+  is valid and can now be built.
+- **A constructed 4010 ISA could not be rendered** (#23): its `x12()` read
+  `self.delimiters`, which is `None` on a built segment. It now defaults the
+  delimiters as the 5010 segment does.
+
+### Known gap, decision pending
+- No 837 implementation, and neither the 276 nor the 277, validates that an
+  HL segment's parent id names an HL that exists; the 270 and 271 do. Found
+  by the mutation leg and recorded as an expected failure there. Adding the
+  check is a validation tightening across five transaction sets.
+
 ## 2.0.0 — 2026-09-19
 
 ### Fixed — silent data loss
