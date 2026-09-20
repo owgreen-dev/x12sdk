@@ -82,10 +82,9 @@ first, or the mutation proves nothing.
 
 Where a transaction set genuinely has no validator for an invariant, that is
 recorded in `KNOWN_UNENFORCED` with a reason, as a strict expected failure.
-Today that table holds one finding: **no 837 implementation and neither the
-276 nor the 277 checks that an HL's parent id names an HL that exists.** The
-270 and 271 do. Adding it is a tightening across five sets and awaits a
-decision.
+The table is empty. Its one entry so far, that no 837 implementation and
+neither the 276 nor the 277 checked HL parent linkage, was resolved in 2.1.0
+by adding `validate_hl_linkage` to all six.
 
 ## The backtest
 

@@ -31,23 +31,7 @@ ENVELOPE = {"ISA", "GS", "GE", "IEA"}
 
 # (transaction set directory, mutation name) -> why the parser cannot be
 # expected to reject it. Strict xfail.
-_NO_HL_LINKAGE = (
-    "no validator checks that an HL segment's parent id names an HL that "
-    "exists. The 270 and 271 enforce this in validate_hierarchy_ids; this "
-    "transaction set does not. Found by the audit suite 2026-09-20; adding "
-    "the validator is a tightening across five sets and awaits a decision."
-)
-KNOWN_UNENFORCED: dict = {
-    (directory, "dangling_hl_parent"): _NO_HL_LINKAGE
-    for directory in (
-        "837_004010X096A1",
-        "837_004010X098A1",
-        "837_005010X222A2",
-        "837_005010X223A3",
-        "276_005010X212",
-        "277_005010X212",
-    )
-}
+KNOWN_UNENFORCED: dict = {}
 
 
 def _samples():

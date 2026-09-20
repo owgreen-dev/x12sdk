@@ -157,3 +157,48 @@ def validate_segment_count(self):
         )
 
     return self
+
+
+def validate_hl_linkage(self):
+    """
+    Validates that every HL segment's parent id names the HL it is nested
+    under, and that no HL id repeats within the transaction.
+
+    The check is structural rather than positional: it follows the model's
+    own nesting (a patient loop sits inside its subscriber loop, a subscriber
+    inside its billing provider) and requires each HL02 to equal the HL01 of
+    the loop that contains it. A top-level HL must have no parent.
+
+    Until 2.1.0 only the 270 and 271 enforced this; every 837 implementation
+    and the 276/277 pair accepted a dangling parent id in silence. Found by
+    the audit suite's mutation leg.
+    """
+    seen = set()
+
+    def walk(group, enclosing_id):
+        current = enclosing_id
+        hl_segment = getattr(group, "hl_segment", None)
+        if hl_segment is not None:
+            hl_id = (hl_segment.hierarchical_id_number or "").strip()
+            parent = (hl_segment.hierarchical_parent_id_number or "").strip()
+            if hl_id in seen:
+                raise ValueError(f"duplicate HL id {hl_id!r}")
+            seen.add(hl_id)
+            expected = (enclosing_id or "").strip()
+            if parent != expected:
+                where = (
+                    f"nested under HL {expected!r}" if expected else "at the top level"
+                )
+                raise ValueError(f"HL {hl_id!r} names parent {parent!r} but is {where}")
+            current = hl_id
+        for name in type(group).model_fields:
+            if not name.startswith("loop_"):
+                continue
+            value = getattr(group, name, None)
+            children = value if isinstance(value, list) else [value]
+            for child in children:
+                if child is not None and hasattr(type(child), "model_fields"):
+                    walk(child, current)
+
+    walk(self, None)
+    return self
