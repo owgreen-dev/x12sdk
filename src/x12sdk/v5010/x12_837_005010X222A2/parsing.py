@@ -500,8 +500,18 @@ def set_other_subscriber_entities_loop(
             )
 
         other_subscriber = _get_other_subscriber(context)
-        other_subscriber[loop_name] = {"ref_segment": []}
-        context.set_loop_context(loop_name, other_subscriber[loop_name])
+        if (
+            loop_name
+            == TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_REFERRING_PROVIDER_NAME
+        ):
+            # Loop 2330C repeats and the model declares it a list. Assigning
+            # here kept only the last occurrence. The other 2330 loops occur
+            # once and stay dicts.
+            other_subscriber.setdefault(loop_name, []).append({"ref_segment": []})
+            context.set_loop_context(loop_name, other_subscriber[loop_name][-1])
+        else:
+            other_subscriber[loop_name] = {"ref_segment": []}
+            context.set_loop_context(loop_name, other_subscriber[loop_name])
 
 
 @match("LX")
