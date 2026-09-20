@@ -24,6 +24,14 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   record told apart by INS01 and INS02 rather than a loop nested under the
   subscriber, and both kinds appear by default. **Every supported transaction
   set can now be generated.**
+- **`members()` on the 270 and 271, and `claims()` on the 276 and 277**, in
+  `x12sdk.access`. Both pairs carry the same subscriber/dependent branch as
+  the 837, so the same correctness trap applies: code written against one path
+  reports nothing on a file using the other. Each yields a flat, frozen record
+  carrying its context. A tracked claim reads its charge from AMT on an
+  inquiry and from STC on a response, so a caller need not know which it
+  holds. Verified against the whole corpus by requiring every EQ, EB and
+  patient-level TRN segment in the raw files to be reachable.
 - Fifteen generated files added to the sample corpus, which the round-trip
   sweep now covers (72 files to 87): six eligibility, six claim status and
   three enrollment, each covering subscriber-only, dependent-only and mixed.
