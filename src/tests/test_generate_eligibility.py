@@ -211,11 +211,13 @@ def test_a_271_carries_every_benefit_it_was_given():
     assert [s[1] for s in eb] == ["1", "6", "1"]
 
 
-def test_a_270_refuses_more_than_one_benefit_rather_than_dropping_them():
+@pytest.mark.parametrize("dependent", [False, True])
+def test_a_270_carries_every_benefit_it_was_given(dependent, tmp_path):
     """
-    Loop2100C.loop_2110c is a single loop on the 270, not a list as on the
-    271, and the parser overwrites it on each EQ. Raising keeps the
-    limitation visible instead of silently keeping only the last one.
+    EQ repeats within loop 2110, so one inquiry may ask about several service
+    types. The parser assigned rather than appended and the model held a
+    single loop, so every inquiry but the last was lost with no error raised.
+    Covers the subscriber branch and the dependent branch.
     """
     spec = EligibilitySpec(
         members=[
@@ -223,12 +225,34 @@ def test_a_270_refuses_more_than_one_benefit_rather_than_dropping_them():
                 benefits=(
                     BenefitSpec(service_type="30"),
                     BenefitSpec(service_type="35"),
-                )
+                    BenefitSpec(service_type="88"),
+                ),
+                dependent=dependent,
             )
         ]
     )
-    with pytest.raises(ValueError, match="one EQ per member"):
-        generate_270(seed=1, members=spec)
+    x12 = generate_270(seed=1, members=spec)
+    assert [s[1] for s in _segments(x12) if s[0] == "EQ"] == ["30", "35", "88"]
+
+    # and it survives the parser, which is where the overwrite used to happen
+    path = tmp_path / "many-eq.270"
+    path.write_text(x12)
+    assert_eq_model(str(path))
+
+    model = _read(x12, tmp_path, "read.270")[0]
+    reached = sorted(
+        code for member in model.members() for code in member.service_type_codes
+    )
+    assert reached == ["30", "35", "88"]
+
+
+def test_a_270_with_one_benefit_still_works():
+    """The field is a list now even when only one inquiry is made."""
+    spec = EligibilitySpec(members=[MemberSpec(benefits=(BenefitSpec(),))])
+    assert (
+        len([s for s in _segments(generate_270(seed=1, members=spec)) if s[0] == "EQ"])
+        == 1
+    )
 
 
 def test_zero_members_is_rejected():

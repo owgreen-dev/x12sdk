@@ -11,6 +11,7 @@ This file also pins the segment-count validator, which the 834 alone had
 commented out.
 """
 
+import pathlib
 import random
 
 import pytest
@@ -224,3 +225,37 @@ def test_a_wrong_segment_count_is_rejected(tmp_path):
     with pytest.raises(Exception, match="(?i)segment count|se01|count"):
         with X12ModelReader(str(path)) as reader:
             list(reader.models())
+
+
+def test_more_than_one_disability_period_survives_the_parser():
+    """
+    Loop 2200 is declared ``List[Loop2200]`` and repeats, but the parser
+    assigned a fresh dict on every DSB instead of appending, so only the last
+    disability period survived. A single one looked fine because
+    ``X12SegmentGroup`` wraps a lone record for a list field, which hid the
+    defect; no sample in the inherited corpus carries a DSB at all.
+
+    Same bug shape as the 270 eligibility loop fixed alongside it.
+    """
+    path = (
+        pathlib.Path(__file__).parent
+        / "resources"
+        / "834_005010X220A1"
+        / "two-disability-periods.834"
+    )
+    with X12ModelReader(str(path)) as reader:
+        model = next(iter(reader.models()))
+
+    periods = model.loop_2000[0].loop_2200 or []
+    assert len(periods) == 2
+    assert [
+        segment.disability_type_code
+        for period in periods
+        for segment in period.dsb_segment
+    ] == ["2", "3"]
+    # the parser resolves a D8 date to a date object
+    assert [
+        str(segment.date_time_period)
+        for period in periods
+        for segment in (period.dtp_segment or [])
+    ] == ["2025-01-01", "2025-06-01"]

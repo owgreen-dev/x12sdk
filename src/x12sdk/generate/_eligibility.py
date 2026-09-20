@@ -96,20 +96,10 @@ def build_270(
     :param spec: Who is asking, of whom, and about which members.
     :param seed: Seeds the values the specification leaves unstated.
     :param control_number: ST02/SE02. At least 4 characters.
-    :raises ValueError: If a member carries more than one benefit. The model
-        holds a single EQ per member (``Loop2100C.loop_2110c`` is not a list,
-        unlike the 271), and the parser overwrites rather than appends, so a
-        second one would be lost. Raising keeps that visible.
-    """
-    for member in spec.members:
-        if len(member.benefits) > 1:
-            raise ValueError(
-                "a 270 as modelled carries one EQ per member, but this member "
-                f"has {len(member.benefits)} benefits. Loop2100C.loop_2110c is "
-                "a single loop rather than a list, and the parser overwrites "
-                "it on each EQ, so the others would be silently dropped."
-            )
 
+    Every benefit in the specification is rendered. EQ repeats within loop
+    2110, so an inquiry can ask about several service types at once.
+    """
     values = ValueFactory(seed)
     created = values.service_date(30)
     provider_name = spec.provider_name or values.provider_name()
@@ -118,13 +108,16 @@ def build_270(
     subscribers: List[inquiry_loops.Loop2000C] = []
     for entry in _hierarchy(spec.members):
         member: MemberSpec = entry["member"]
-        benefit: BenefitSpec = member.benefits[0]
-        eligibility = inquiry_loops.Loop2110C(
-            eq_segment=inquiry_segments.Loop2110EqSegment(
-                # EQ01 repeats, so it is a list even for a single service type
-                service_type_code=[benefit.service_type]
+        eligibility = [
+            inquiry_loops.Loop2110C(
+                eq_segment=inquiry_segments.Loop2110EqSegment(
+                    # EQ01 itself also repeats, so it is a list even for one
+                    # service type
+                    service_type_code=[benefit.service_type]
+                )
             )
-        )
+            for benefit in member.benefits
+        ]
         n3_segment, n4_segment = _address(values)
         subscriber_name = inquiry_loops.Loop2100C(
             nm1_segment=inquiry_segments.Loop2100CNm1Segment(
@@ -180,11 +173,14 @@ def build_270(
                             date_time_period_format_qualifier="D8",
                             date_time_period=created.strftime("%Y%m%d"),
                         ),
-                        loop_2110d=inquiry_loops.Loop2110D(
-                            eq_segment=inquiry_segments.Loop2110EqSegment(
-                                service_type_code=[benefit.service_type]
+                        loop_2110d=[
+                            inquiry_loops.Loop2110D(
+                                eq_segment=inquiry_segments.Loop2110EqSegment(
+                                    service_type_code=[benefit.service_type]
+                                )
                             )
-                        ),
+                            for benefit in member.benefits
+                        ],
                     ),
                 )
             ]

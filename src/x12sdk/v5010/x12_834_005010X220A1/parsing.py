@@ -320,14 +320,17 @@ def set_member_disability_loop(context: X12ParserContext, segment_data: Dict) ->
     :param segment_data: The current segment's data
     """
     member_loop = _get_member(context)
-    member_loop[TransactionLoops.MEMBER_DISABILITY_INFORMATION] = {
-        "dsb_segment": [],
-        "dtp_segment": [],
-    }
+    # loop 2200 is declared List[Loop2200] and repeats. Assigning rather than
+    # appending kept only the last disability record; a single one survived
+    # because X12SegmentGroup wraps a lone record for a list field, which hid
+    # the defect. No sample in the corpus carries a DSB at all.
+    member_loop.setdefault(TransactionLoops.MEMBER_DISABILITY_INFORMATION, []).append(
+        {"dsb_segment": [], "dtp_segment": []}
+    )
 
     member_disability_information = member_loop[
         TransactionLoops.MEMBER_DISABILITY_INFORMATION
-    ]
+    ][-1]
     context.set_loop_context(
         TransactionLoops.MEMBER_DISABILITY_INFORMATION, member_disability_information
     )

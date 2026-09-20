@@ -4,6 +4,56 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## 2.0.0 — 2026-09-19
+
+### Fixed — silent data loss
+- **A 270 kept only the last EQ segment.** Loop 2110 repeats up to 99 times, so
+  one inquiry may ask about several service types. The parser assigned a fresh
+  loop on every EQ instead of appending, and the model held a single loop where
+  the 271 correctly holds a list, so an inquiry covering medical, dental and
+  vision parsed as vision alone with no error raised. Both sides are fixed.
+  The handler also decided the subscriber-or-dependent branch from the current
+  loop name, which was only safe while a single EQ was possible; the second EQ
+  arrives while the context already sits inside the eligibility loop.
+- **An 834 kept only the last disability period.** `Loop2000.loop_2200` is
+  declared `List[Loop2200]` and repeats, but the parser assigned rather than
+  appended. A single period looked correct because `X12SegmentGroup` wraps a
+  lone record for a list field, which hid the defect. No sample in the
+  inherited corpus carries a DSB at all. Found by sweeping every parser for
+  the same shape after the 270 defect surfaced.
+
+### Changed — breaking
+Two fields on the 270 became lists. **Reading code that walked them directly
+must index or iterate now.** Nothing else in the public API changed.
+
+| field | before | after |
+|---|---|---|
+| `Loop2100C.loop_2110c` | `Optional[Loop2110C]` | `Optional[List[Loop2110C]]` |
+| `Loop2100D.loop_2110d` | `Loop2110D` (required) | `List[Loop2110D]` (required, `min_length=1`) |
+
+```python
+# before
+model.loop_2000a[0].loop_2000b[0].loop_2000c[0].loop_2100c.loop_2110c.eq_segment
+
+# after
+model.loop_2000a[0].loop_2000b[0].loop_2000c[0].loop_2100c.loop_2110c[0].eq_segment
+```
+
+The 271 already held lists here, so the two halves of the eligibility pair now
+agree. Code using `members()` needs no change: the accessor already normalised
+a single loop and a list to the same tuple.
+
+Writers are unaffected. `X12SegmentGroup` accepts a single record for a list
+field, so constructing a loop with one benefit still works either way.
+
+### Added
+- `generate_270` renders every benefit in the specification instead of
+  refusing more than one. The guard existed only because the defect above made
+  a second inquiry unrepresentable.
+- Two samples added to the corpus for the repaired loops: a 270 asking about
+  several service types on both branches, and an 834 with two disability
+  periods. The round-trip sweep now covers 89 files.
+
 ## 1.2.0 — 2026-09-19
 
 ### Added

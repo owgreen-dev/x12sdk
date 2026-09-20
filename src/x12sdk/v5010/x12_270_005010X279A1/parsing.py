@@ -157,14 +157,25 @@ def set_eligibility_inquiry_loop(context: X12ParserContext, segment_data: Dict) 
     :param segment_data: The current segment's data
     """
 
-    if context.loop_name == TransactionLoops.SUBSCRIBER_NAME:
+    # EQ repeats within loop 2110, so the second and later EQ segments arrive
+    # while the context already sits in the eligibility loop rather than the
+    # name loop. Deciding the branch from the current loop name alone was safe
+    # only while a single EQ was possible.
+    if context.loop_name in (
+        TransactionLoops.SUBSCRIBER_NAME,
+        TransactionLoops.SUBSCRIBER_ELIGIBILITY,
+    ):
+        name_loop = TransactionLoops.SUBSCRIBER_NAME
         loop_name = TransactionLoops.SUBSCRIBER_ELIGIBILITY
     else:
+        name_loop = TransactionLoops.DEPENDENT_NAME
         loop_name = TransactionLoops.DEPENDENT_ELIGIBILITY
 
-    patient_record = context.patient_record[context.loop_name]
-    patient_record[loop_name] = {"amt_segment": []}
-    context.set_loop_context(loop_name, patient_record[loop_name])
+    patient_record = context.patient_record[name_loop]
+    # Appending, not assigning: assigning kept only the last inquiry, so a
+    # request covering several service types lost all but one with no error.
+    patient_record.setdefault(loop_name, []).append({"amt_segment": []})
+    context.set_loop_context(loop_name, patient_record[loop_name][-1])
 
 
 @match("HL", conditions={"hierarchical_level_code": "23"})
