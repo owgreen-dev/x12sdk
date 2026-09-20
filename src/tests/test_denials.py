@@ -18,6 +18,7 @@ from x12sdk.denials import (
     PATIENT_RESPONSIBILITY,
     Adjustment,
     categorize,
+    category_map,
     denial_summary,
     describe,
     iter_adjustments,
@@ -274,3 +275,20 @@ def test_to_dataframe_shapes_the_records():
     assert frame["procedure"].iloc[1] == "HC:99213"
     # amounts stay Decimal, so sums are exact
     assert frame["amount"].sum() == Decimal("40.00")
+
+
+def test_a2_and_42_stay_uncategorized_on_purpose():
+    """
+    Both are contractual write-offs in routine work, and both are left in
+    ``other`` anyway. ``contractual`` is the category a denial review skips:
+    A2 is payer-discretionary in practice, and 42 was retired in favour of 45,
+    so a payer still sending it is itself worth a second look. Pinning the
+    decision here stops it being "fixed" as an oversight.
+    """
+    assert categorize("A2") == OTHER
+    assert categorize("42") == OTHER
+    assert categorize("45") == CONTRACTUAL
+
+    mapping = category_map()
+    assert "A2" not in mapping
+    assert "42" not in mapping

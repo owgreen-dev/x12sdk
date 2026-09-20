@@ -93,6 +93,18 @@ _CARC_CATEGORY: Dict[str, str] = {
     # payment already made under another line
     "97": BUNDLING,
     "234": BUNDLING,
+    #
+    # Deliberately NOT mapped, though both are contractual write-offs in
+    # routine remittance work:
+    #
+    #   A2  payer-discretionary in practice, and `contractual` is the category
+    #       an analyst skips. Leaving it in `other` keeps it visible.
+    #   42  retired in favour of 45. A payer still sending it is itself worth
+    #       a second look, which folding it into `contractual` would hide.
+    #
+    # This is a judgement about what a denial review should surface, not an
+    # oversight. Override it with your own mapping if your book of business
+    # treats them as routine.
 }
 
 
