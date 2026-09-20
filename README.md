@@ -387,6 +387,8 @@ pytest --cov
 shipped here, run over every transaction set on every commit; it is described,
 limits included, in [repo-docs/AUDIT.md](repo-docs/AUDIT.md).
 
+Where the project is going, release by release, is in [ROADMAP.md](ROADMAP.md).
+
 Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md) (Apache-2.0,
 DCO sign-off, no copyrighted standards text, no real PHI). To add a
 transaction set, see [repo-docs/NEW_TRANSACTION.md](repo-docs/NEW_TRANSACTION.md);
