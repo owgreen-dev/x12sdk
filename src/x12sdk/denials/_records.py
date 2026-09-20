@@ -6,6 +6,10 @@ service line level (loop 2110), and each CAS segment carries up to six
 reason/amount pairs. Analysis wants none of that shape — it wants one row per
 reason code with the claim context attached, which is what
 :func:`iter_adjustments` produces.
+
+The walk down to a claim is not repeated here: it uses the transaction's own
+``claims()`` accessor, so there is one definition of how to reach a claim and
+one place for it to be wrong.
 """
 
 from __future__ import annotations
@@ -119,60 +123,59 @@ def iter_adjustments(transaction) -> Iterator[Adjustment]:
     :return: One record per populated CAS reason code, claim level first then
         each service line, in transaction order.
 
+    Claims are reached through :meth:`x12sdk.access.RemittanceAccess.claims`
+    rather than by walking loops here.
+
     >>> from x12sdk.io import X12ModelReader
     >>> from x12sdk.denials import iter_adjustments
     >>> with X12ModelReader(remittance) as reader:      # doctest: +SKIP
     ...     for txn in reader.models():
     ...         rows = list(iter_adjustments(txn))
     """
-    payer_n1 = transaction.loop_1000a.n1_segment
-    payer_name = getattr(payer_n1, "name", None)
-    payer_id = getattr(payer_n1, "identification_code", None)
+    for paid in transaction.claims():
+        loop_2100 = paid.claim
+        clp = loop_2100.clp_segment
+        claim_remarks = _claim_remark_codes(loop_2100)
+        claim_context = {
+            "payer_name": paid.payer_name,
+            "payer_id": getattr(paid.payer.n1_segment, "identification_code", None),
+            "patient_control_number": clp.patient_control_number,
+            "payer_claim_control_number": clp.payer_claim_control_number,
+            "claim_status_code": clp.claim_status_code,
+            "claim_charge_amount": clp.total_claim_charge_amount,
+            "claim_payment_amount": clp.claim_payment_amount,
+            "patient_responsibility_amount": clp.patient_responsibility_amount,
+        }
 
-    for loop_2000 in transaction.loop_2000 or []:
-        for loop_2100 in loop_2000.loop_2100 or []:
-            clp = loop_2100.clp_segment
-            claim_remarks = _claim_remark_codes(loop_2100)
-            claim_context = {
-                "payer_name": payer_name,
-                "payer_id": payer_id,
-                "patient_control_number": clp.patient_control_number,
-                "payer_claim_control_number": clp.payer_claim_control_number,
-                "claim_status_code": clp.claim_status_code,
-                "claim_charge_amount": clp.total_claim_charge_amount,
-                "claim_payment_amount": clp.claim_payment_amount,
-                "patient_responsibility_amount": clp.patient_responsibility_amount,
-            }
+        for cas in paid.adjustments:
+            for reason, amount, quantity in _split_cas(cas):
+                yield Adjustment(
+                    level="claim",
+                    group_code=cas.adjustment_group_code,
+                    reason_code=reason,
+                    amount=amount if amount is not None else Decimal("0"),
+                    quantity=quantity,
+                    category=categorize(reason),
+                    remark_codes=claim_remarks,
+                    **claim_context,
+                )
 
-            for cas in loop_2100.cas_segment or []:
+        for loop_2110 in paid.service_lines:
+            svc = loop_2110.svc_segment
+            line_remarks = claim_remarks + _line_remark_codes(loop_2110)
+            for cas in loop_2110.cas_segment or []:
                 for reason, amount, quantity in _split_cas(cas):
                     yield Adjustment(
-                        level="claim",
+                        level="line",
                         group_code=cas.adjustment_group_code,
                         reason_code=reason,
                         amount=amount if amount is not None else Decimal("0"),
                         quantity=quantity,
                         category=categorize(reason),
-                        remark_codes=claim_remarks,
+                        procedure=svc.composite_medical_procedure_identifier_1,
+                        revenue_code=getattr(svc, "revenue_code", None),
+                        line_charge_amount=svc.line_item_charge_amount,
+                        line_payment_amount=svc.line_item_provider_payment_amount,
+                        remark_codes=line_remarks,
                         **claim_context,
                     )
-
-            for loop_2110 in getattr(loop_2100, "loop_2110", None) or []:
-                svc = loop_2110.svc_segment
-                line_remarks = claim_remarks + _line_remark_codes(loop_2110)
-                for cas in loop_2110.cas_segment or []:
-                    for reason, amount, quantity in _split_cas(cas):
-                        yield Adjustment(
-                            level="line",
-                            group_code=cas.adjustment_group_code,
-                            reason_code=reason,
-                            amount=amount if amount is not None else Decimal("0"),
-                            quantity=quantity,
-                            category=categorize(reason),
-                            procedure=svc.composite_medical_procedure_identifier_1,
-                            revenue_code=getattr(svc, "revenue_code", None),
-                            line_charge_amount=svc.line_item_charge_amount,
-                            line_payment_amount=svc.line_item_provider_payment_amount,
-                            remark_codes=line_remarks,
-                            **claim_context,
-                        )
