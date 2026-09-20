@@ -101,7 +101,10 @@ class Loop2100D(X12SegmentGroup):
     ins_segment: Optional[Loop2100DInsSegment] = None
     hi_segment: Optional[HiSegment] = None
     dtp_segment: Optional[Loop2100DtpSegment] = None
-    loop_2110d: Loop2110D
+    # EQ repeats within loop 2110, up to 99 times: one inquiry may ask about
+    # several service types. min_length=1 keeps the loop required, as the
+    # implementation guide has it for a dependent, while allowing repeats.
+    loop_2110d: List[Loop2110D] = Field(min_length=1)
 
     _validate_ref_segments = model_validator(mode="after")(validate_duplicate_ref_codes)
 
@@ -146,7 +149,9 @@ class Loop2100C(X12SegmentGroup):
     ins_segment: Optional[Loop2100CInsSegment] = None
     hi_segment: Optional[HiSegment] = None
     dtp_segment: Optional[Loop2100DtpSegment] = None
-    loop_2110c: Optional[Loop2110C] = None
+    # repeats, as loop_2110d does; optional because a subscriber may appear
+    # only to carry a dependent whose eligibility is being asked about
+    loop_2110c: Optional[List[Loop2110C]] = Field(None, min_length=0)
 
     _validate_ref_segments = model_validator(mode="after")(validate_duplicate_ref_codes)
 

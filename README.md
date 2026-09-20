@@ -277,7 +277,8 @@ for row in describe(denial_summary(rows), descriptions):
 ```
 
 Eligibility works the same way, and a 270 and the 271 answering it can be
-generated as a matched pair from one specification:
+generated as a matched pair from one specification. One inquiry may ask about
+several service types, since EQ repeats:
 
 ```python
 from x12sdk.generate import BenefitSpec, EligibilitySpec, MemberSpec
