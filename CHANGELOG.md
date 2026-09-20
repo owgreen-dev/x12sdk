@@ -22,8 +22,16 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 - **`generate_834()`** — synthetic benefit enrollment. The 834 is the one
   supported transaction with no HL hierarchy: a dependent is a separate member
   record told apart by INS01 and INS02 rather than a loop nested under the
-  subscriber, and both kinds appear by default. **Every supported transaction
-  set can now be generated.**
+  subscriber, and both kinds appear by default. Seven of the eight supported
+  transaction sets now generate: 835, 837P, 834, 270, 271, 276 and 277. The
+  institutional claim, 837I, is parsed and has accessors but no generator yet.
+
+### Corrected after release
+- The 1.2.0 notes claimed every supported transaction set could be generated.
+  That was wrong: 837I has no generator. Seven of eight do. The PyPI
+  description for 1.2.0 cannot be edited after upload, so it carries the
+  original wording; this entry and the GitHub release notes are the
+  correction.
 - **`members()` on the 270 and 271, and `claims()` on the 276 and 277**, in
   `x12sdk.access`. Both pairs carry the same subscriber/dependent branch as
   the 837, so the same correctness trap applies: code written against one path
