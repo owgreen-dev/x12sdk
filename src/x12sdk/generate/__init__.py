@@ -55,6 +55,7 @@ from typing import Optional, Sequence, Union
 from ..io import write_transactions
 from ._835 import build_835, random_claims
 from ._837p import build_837p, claim_specs_to_patients, random_patients
+from ._claim_status import build_276, build_277, random_status_patients
 from ._eligibility import build_270, build_271, random_members
 from ._spec import (
     BENEFIT_STATUS_CODES,
@@ -63,12 +64,15 @@ from ._spec import (
     AdjustmentSpec,
     BenefitSpec,
     ClaimSpec,
+    ClaimStatusSpec,
     EligibilitySpec,
     MemberSpec,
     PatientSpec,
     RemittanceSpec,
     ServiceLineSpec,
+    StatusPatientSpec,
     SubmissionSpec,
+    TrackedClaimSpec,
     denial,
     patient_responsibility,
 )
@@ -261,11 +265,105 @@ def generate_271(
     )
 
 
+def _claim_status_spec(
+    patients, seed, dependent_rate, payer_name, requester_name, provider_name
+) -> ClaimStatusSpec:
+    """Turns a count, a list of patients, or a whole spec into a spec."""
+    if isinstance(patients, ClaimStatusSpec):
+        return patients
+    if isinstance(patients, int):
+        if patients < 1:
+            raise ValueError("patients must be at least 1")
+        patients = random_status_patients(
+            patients, ValueFactory(seed), dependent_rate=dependent_rate
+        )
+    return ClaimStatusSpec(
+        patients=list(patients),
+        payer_name=payer_name,
+        requester_name=requester_name,
+        provider_name=provider_name,
+    )
+
+
+def generate_276(
+    *,
+    seed: int = 0,
+    patients: Union[int, Sequence[StatusPatientSpec], ClaimStatusSpec] = 5,
+    dependent_rate: float = 0.3,
+    payer_name: Optional[str] = None,
+    requester_name: Optional[str] = None,
+    provider_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPROV",
+    receiver_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 276 claim status inquiry.
+
+    :param seed: Reproduces the same file when unchanged.
+    :param patients: A number of patients to invent, specifications to follow,
+        or a whole :class:`ClaimStatusSpec`.
+    :param dependent_rate: The share of patients who are a dependent of the
+        subscriber rather than the subscriber themselves, so generated files
+        exercise both branches. Ignored when a ``ClaimStatusSpec`` is given.
+    :param payer_name: Defaults to a synthetic plan name.
+    :param requester_name: The information receiver asking. Defaults to a
+        synthetic name.
+    :param provider_name: The service provider the claims belong to.
+    :param sender_id: ISA06 / GS02.
+    :param receiver_id: ISA08 / GS03.
+    :param control_number: ST02 / SE02, at least 4 characters.
+    :return: The interchange, ISA through IEA.
+    """
+    spec = _claim_status_spec(
+        patients, seed, dependent_rate, payer_name, requester_name, provider_name
+    )
+    return write_transactions(
+        [build_276(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
+def generate_277(
+    *,
+    seed: int = 0,
+    patients: Union[int, Sequence[StatusPatientSpec], ClaimStatusSpec] = 5,
+    dependent_rate: float = 0.3,
+    payer_name: Optional[str] = None,
+    requester_name: Optional[str] = None,
+    provider_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPAYER",
+    receiver_id: str = "SYNTHETICPROV",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 277 claim status response.
+
+    Takes the same specification as :func:`generate_276` and stays in step with
+    it on the same seed, so an inquiry and the response to it describe the same
+    people and the same claims.
+
+    :return: The interchange, ISA through IEA.
+    """
+    spec = _claim_status_spec(
+        patients, seed, dependent_rate, payer_name, requester_name, provider_name
+    )
+    return write_transactions(
+        [build_277(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "BENEFIT_STATUS_CODES",
     "BenefitSpec",
     "ClaimSpec",
+    "ClaimStatusSpec",
     "EligibilitySpec",
     "GROUP_CODES",
     "MemberSpec",
@@ -273,20 +371,27 @@ __all__ = [
     "PatientSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
+    "StatusPatientSpec",
     "SubmissionSpec",
+    "TrackedClaimSpec",
     "ValueFactory",
     "build_270",
     "build_271",
+    "build_276",
+    "build_277",
     "build_835",
     "build_837p",
     "claim_specs_to_patients",
     "denial",
     "generate_270",
     "generate_271",
+    "generate_276",
+    "generate_277",
     "generate_835",
     "generate_837p",
     "patient_responsibility",
     "random_claims",
     "random_members",
     "random_patients",
+    "random_status_patients",
 ]

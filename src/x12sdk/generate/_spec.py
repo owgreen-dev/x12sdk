@@ -243,6 +243,68 @@ class EligibilitySpec:
             raise ValueError("an eligibility transaction must have at least one member")
 
 
+# --- claim status (276 / 277) -----------------------------------------------
+
+
+@dataclass(frozen=True)
+class TrackedClaimSpec:
+    """
+    One claim whose status is asked about on a 276 or reported on a 277.
+
+    ``paid`` and the status codes are only rendered on the response; an
+    inquiry carries the identifying detail and nothing else, so the same
+    specification builds a 276 and the 277 answering it.
+    """
+
+    charge: Decimal
+    patient_control_number: Optional[str] = None
+    payer_claim_control_number: Optional[str] = None
+    paid: Optional[Decimal] = None
+    status_category: str = "F1"
+    status_code: str = "1"
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.charge, Decimal):
+            object.__setattr__(self, "charge", Decimal(str(self.charge)))
+        if self.paid is not None and not isinstance(self.paid, Decimal):
+            object.__setattr__(self, "paid", Decimal(str(self.paid)))
+        if self.paid is not None and self.paid > self.charge:
+            raise ValueError(f"paid {self.paid} cannot exceed the charge {self.charge}")
+
+
+@dataclass(frozen=True)
+class StatusPatientSpec:
+    """A patient on a 276 or 277, and the claims being tracked for them."""
+
+    claims: Sequence[TrackedClaimSpec]
+    dependent: bool = False
+    relationship: str = "19"
+    member_id: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.claims:
+            raise ValueError("a patient must have at least one tracked claim")
+        if self.dependent and self.relationship not in PATIENT_RELATIONSHIP_CODES:
+            raise ValueError(
+                f"relationship must be one of {PATIENT_RELATIONSHIP_CODES}, "
+                f"got {self.relationship!r}"
+            )
+
+
+@dataclass(frozen=True)
+class ClaimStatusSpec:
+    """A whole 276 or 277: one payer, one requester, one provider, its patients."""
+
+    patients: Sequence[StatusPatientSpec]
+    payer_name: Optional[str] = None
+    requester_name: Optional[str] = None
+    provider_name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.patients:
+            raise ValueError("a claim status transaction needs at least one patient")
+
+
 def denial(group: str, reason: str, amount) -> AdjustmentSpec:
     """
     Shorthand for a payer-side adjustment.
@@ -263,6 +325,7 @@ __all__ = [
     "BENEFIT_STATUS_CODES",
     "BenefitSpec",
     "ClaimSpec",
+    "ClaimStatusSpec",
     "EligibilitySpec",
     "GROUP_CODES",
     "MemberSpec",
@@ -270,7 +333,9 @@ __all__ = [
     "PatientSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
+    "StatusPatientSpec",
     "SubmissionSpec",
+    "TrackedClaimSpec",
     "denial",
     "patient_responsibility",
 ]

@@ -276,6 +276,17 @@ response = generate_271(seed=1, members=spec)
 The eligibility transactions carry the same subscriber and dependent branch as
 the 837, so generated files contain both by default here too.
 
+Claim status works the same way. The 276 states what was billed, the 277
+answers with an STC status, and on one seed the pair describes the same people
+and the same claims:
+
+```python
+from x12sdk.generate import generate_276, generate_277
+
+inquiry = generate_276(seed=9, patients=8)
+response = generate_277(seed=9, patients=8)
+```
+
 ## Migrating from `linuxforhealth-x12`
 
 | before | after |
