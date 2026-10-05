@@ -237,6 +237,24 @@ with X12ModelReader("in.835") as reader:
 out = write_transactions(transactions, sender_id="SENDERID", receiver_id="RECEIVERID")
 ```
 
+`X12ModelWriter` is the same thing as a context manager, the mirror image of
+the reader: write models into it and the interchange is assembled when the
+block exits. If the block raises, nothing is written.
+
+```python
+from x12sdk.io import X12ModelReader, X12ModelWriter
+
+with X12ModelReader("in.835") as reader, X12ModelWriter(
+    "out.835", sender_id="SENDERID", receiver_id="RECEIVERID"
+) as writer:
+    for model in reader.models():
+        if model.header.st_segment.transaction_set_control_number != "0003":
+            writer.write(model)   # drop one transaction, keep the rest
+```
+
+The destination can be a path, an open text stream, or nothing at all, in
+which case the result is on `writer.interchange` after the block.
+
 ## Generating synthetic files
 
 Real claims and remittances contain PHI, and there is no public X12 corpus to

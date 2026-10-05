@@ -7,14 +7,16 @@ complete X12 interchange.
 The transaction models cover ST through SE. The interchange (ISA/IEA) and
 functional group (GS/GE) envelopes are not modelled: the reader parses them
 for delimiters and version and then discards them. :func:`write_transactions`
-supplies them on the way out.
+supplies them on the way out, and :class:`X12ModelWriter` does the same as a
+context manager, the mirror image of :class:`X12ModelReader`.
 """
 
 import datetime
 import logging
+import os
 from io import StringIO, TextIOBase
 from pathlib import Path
-from typing import Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, TextIO, Tuple, Union
 
 from .config import IsaDelimiters, TransactionSetVersionIds, get_config
 from .models import X12Delimiters, X12SegmentGroup, X12SegmentName
@@ -278,6 +280,18 @@ def _transaction_identity(transaction: X12SegmentGroup) -> Tuple[str, str]:
     )
 
 
+def _is_transaction_set(model: object) -> bool:
+    """
+    True for a whole transaction set model, as opposed to one of its segments or
+    loops, which also subclass X12SegmentGroup and also live in the x12_<code>
+    package. Transaction sets are the classes defined in a ``transaction_set``
+    module; everything else in the package is a part of one.
+    """
+    return isinstance(model, X12SegmentGroup) and type(model).__module__.endswith(
+        ".transaction_set"
+    )
+
+
 def _interchange_id(value: str, field: str) -> str:
     """
     Validates an interchange id and pads it to the 15 characters ISA requires.
@@ -410,3 +424,133 @@ def write_transactions(
         Path(path).write_text(interchange)
 
     return interchange
+
+
+class X12ModelWriter:
+    """
+    Collects transaction models and writes them out as one X12 interchange.
+
+    The mirror image of :class:`X12ModelReader`: where the reader yields models
+    from a file, the writer takes models and produces a file.
+
+        with X12ModelReader("in.835") as reader, X12ModelWriter(
+            "out.835", sender_id="SENDERID", receiver_id="RECEIVERID"
+        ) as writer:
+            for model in reader.models():
+                writer.write(model)
+
+    The interchange is assembled and written when the ``with`` block exits
+    normally, through :func:`write_transactions`, so the envelopes and control
+    numbers follow the same rules. If the block raises, nothing is written: a
+    half-built interchange never reaches disk. The result is also kept on
+    :attr:`interchange` after closing.
+    """
+
+    def __init__(
+        self,
+        destination: Union[str, "os.PathLike[str]", TextIO, None] = None,
+        *,
+        sender_id: str,
+        receiver_id: str,
+        sender_qualifier: str = "30",
+        receiver_qualifier: str = "30",
+        interchange_control_number: str = "000000001",
+        group_control_number: str = "1",
+        created: Optional[datetime.datetime] = None,
+        usage_indicator: str = "T",
+    ) -> None:
+        """
+        Initializes the writer with where to write and how to fill the envelopes.
+
+        :param destination: A file path, an open text stream, or ``None`` to
+            only build the interchange and keep it on :attr:`interchange`.
+        :param sender_id: ISA06 interchange sender id, padded to 15 characters.
+        :param receiver_id: ISA08 interchange receiver id, padded to 15 characters.
+        :param sender_qualifier: ISA05, defaults to ``30`` (US federal tax id).
+        :param receiver_qualifier: ISA07, defaults to ``30``.
+        :param interchange_control_number: ISA13/IEA02, padded to 9 digits.
+        :param group_control_number: GS06/GE02 for the first group; later groups increment.
+        :param created: Timestamp for ISA09/10 and GS04/05. Defaults to now, at close.
+        :param usage_indicator: ISA15, ``T`` for test or ``P`` for production.
+        """
+        self._destination = destination
+        self._envelope = dict(
+            sender_id=sender_id,
+            receiver_id=receiver_id,
+            sender_qualifier=sender_qualifier,
+            receiver_qualifier=receiver_qualifier,
+            interchange_control_number=interchange_control_number,
+            group_control_number=group_control_number,
+            created=created,
+            usage_indicator=usage_indicator,
+        )
+        self._transactions: List[X12SegmentGroup] = []
+        #: The complete interchange, set when the writer closes.
+        self.interchange: Optional[str] = None
+
+    def __enter__(self) -> "X12ModelWriter":
+        return self
+
+    def write(self, transaction: X12SegmentGroup) -> None:
+        """
+        Adds a transaction set model to the interchange.
+
+        :param transaction: A transaction model, e.g. from :class:`X12ModelReader`
+            or ``x12sdk.generate``.
+        :raises ValueError: if the model is not a transaction set, so the error
+            points at the offending ``write`` rather than at the close.
+        """
+        if not _is_transaction_set(transaction):
+            raise ValueError(
+                f"{type(transaction).__name__} is not a transaction set model; "
+                "write() takes the models X12ModelReader.models() yields, not "
+                "their segments or loops"
+            )
+        _transaction_identity(transaction)
+        self._transactions.append(transaction)
+
+    def write_all(self, transactions: Iterable[X12SegmentGroup]) -> None:
+        """
+        Adds each transaction in turn.
+
+        :param transactions: Transaction set models.
+        """
+        for transaction in transactions:
+            self.write(transaction)
+
+    def __len__(self) -> int:
+        """:return: The number of transactions written so far."""
+        return len(self._transactions)
+
+    def close(self) -> str:
+        """
+        Assembles the interchange and writes it to the destination.
+
+        Called for you when a ``with`` block exits normally; call it yourself
+        when not using ``with``.
+
+        :return: The complete X12 interchange.
+        :raises ValueError: if nothing was written, or an interchange id is not
+            2 to 15 characters.
+        """
+        interchange = write_transactions(self._transactions, **self._envelope)
+        destination = self._destination
+        if destination is None:
+            pass
+        elif hasattr(destination, "write"):
+            destination.write(interchange)
+        else:
+            Path(destination).write_text(interchange)
+        self.interchange = interchange
+        return interchange
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """
+        Writes the interchange if the block completed without an exception.
+
+        :param exc_type: Exception Type
+        :param exc_val: Exception Value
+        :param exc_tb: Exception traceback
+        """
+        if exc_type is None:
+            self.close()
