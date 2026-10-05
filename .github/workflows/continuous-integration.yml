@@ -38,3 +38,7 @@ jobs:
         for f in demo-file/demo.*; do
           x12sdk -m -p "$f" > /dev/null
         done
+        for set in 835 837p 837i 834 270 271 276 277; do
+          x12sdk-generate "$set" --seed 1 -n 2 --out "/tmp/generated.$set"
+          x12sdk -m "/tmp/generated.$set" > /dev/null
+        done
