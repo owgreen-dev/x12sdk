@@ -45,11 +45,11 @@ described exactly, from a denial pattern to a multi-employer enrollment. See
 
 ![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
-![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)
 
 > x12sdk is the maintained continuation of
 > [LinuxForHealth x12](https://github.com/LinuxForHealth/x12), which stopped at
-> 0.57.0 in June 2022. It runs on **Pydantic v2 and Python 3.10–3.13**.
+> 0.57.0 in June 2022. It runs on **Pydantic v2 and Python 3.10–3.14**.
 
 Supported transaction sets:
 

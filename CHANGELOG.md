@@ -4,6 +4,12 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Added
+- **Python 3.14** is tested in CI and declared in the package classifiers. The
+  suite passes unchanged; nothing in the package needed to move.
+
 ## 2.1.0 — 2026-09-20
 
 ### Changed — behaviour
