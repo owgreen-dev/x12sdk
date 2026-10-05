@@ -7,6 +7,13 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 ## Unreleased
 
 ### Added
+- **`X12ModelWriter`**, the mirror image of `X12ModelReader`: a context manager
+  that collects transaction models and writes them as one interchange when the
+  block exits, through `write_transactions`, so envelopes and control numbers
+  follow the same rules. The destination is a path, an open text stream, or
+  nothing (the result stays on `writer.interchange`). If the block raises,
+  nothing is written. `write()` rejects a non-transaction model at the call,
+  not at the close.
 - **`x12sdk-generate`**, a second console script: `x12sdk-generate 835 --seed 7
   --claims 2 [--out FILE]`, one subcommand per transaction set. Every option is
   a keyword argument of the matching `generate_*` function, so the command and
