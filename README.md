@@ -8,12 +8,21 @@ There is no shareable corpus of real X12: every 837 claim and 835 remittance
 carries protected health information, which is why nobody builds on X12
 casually. x12sdk generates valid files from a seed instead.
 
+```shell
+pip install x12sdk
+x12sdk-generate 835 --seed 7 --claims 2 --payer-name "EXAMPLE HEALTH PLAN" --payee-name "EXAMPLE MEDICAL GROUP"
+```
+
+or, from Python:
+
 ```python
 from x12sdk.generate import generate_835
 
 print(generate_835(seed=7, claims=2, payer_name="EXAMPLE HEALTH PLAN",
                    payee_name="EXAMPLE MEDICAL GROUP"))
 ```
+
+Either way:
 
 ```
 ISA*00*          *00*          *30*SYNTHETICPAYER *30*SYNTHETICPROV  *260101*1200*^*00501*000000001*0*T*:~
@@ -182,6 +191,37 @@ x12sdk -s -p demo-file/demo.270   # segments
 x12sdk -m -p demo-file/demo.270   # models
 ```
 
+`x12sdk-generate` is the shell form of [`x12sdk.generate`](#generating-synthetic-files):
+one subcommand per transaction set, every option a keyword argument of the
+matching `generate_*` function, so the command and the library call produce the
+same bytes.
+
+```shell
+x12sdk-generate --help
+usage: x12sdk-generate [-h] [--version] SET ...
+
+positional arguments:
+  SET         which transaction set to generate
+    835       claim payment / remittance advice
+    837p      professional claim
+    837i      institutional claim
+    834       benefit enrollment and maintenance
+    270       eligibility inquiry
+    271       eligibility response
+    276       claim status inquiry
+    277       claim status response
+```
+
+```shell
+x12sdk-generate 835 --seed 7 --claims 2                     # to stdout
+x12sdk-generate 837p --seed 7 --claims 25 --dependent-rate 0.5 --out claims.837
+x12sdk-generate 834 --enrollees 10 --sponsor-name "EXAMPLE EMPLOYER"
+x12sdk-generate 270 --members 3 -o inquiry.270 && x12sdk-generate 271 --members 3 -o response.271
+```
+
+The count option is named for what the set carries (`--claims`, `--enrollees`,
+`--members`, `--patients`); `-n` works for all of them.
+
 ## Writing X12
 
 The transaction models cover ST through SE. `write_transactions` adds the
@@ -210,7 +250,8 @@ remittance = generate_835(seed=7, claims=25)   # a complete file, envelope inclu
 ```
 
 The same seed always produces the same bytes, and generation never touches the
-global random state, so it is safe inside someone else's test suite.
+global random state, so it is safe inside someone else's test suite. The same
+calls are available from the shell as [`x12sdk-generate`](#cli).
 
 To build a specific scenario, describe it:
 

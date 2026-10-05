@@ -7,6 +7,11 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 ## Unreleased
 
 ### Added
+- **`x12sdk-generate`**, a second console script: `x12sdk-generate 835 --seed 7
+  --claims 2 [--out FILE]`, one subcommand per transaction set. Every option is
+  a keyword argument of the matching `generate_*` function, so the command and
+  the library call produce the same bytes; the README's opening example is now
+  a command you can paste. The parsing CLI, `x12sdk`, is unchanged.
 - **Python 3.14** is tested in CI and declared in the package classifiers. The
   suite passes unchanged; nothing in the package needed to move.
 

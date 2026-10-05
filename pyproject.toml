@@ -53,6 +53,7 @@ Changelog = "https://github.com/owgreen-dev/x12sdk/blob/main/CHANGELOG.md"
 
 [project.scripts]
 x12sdk = "x12sdk.cli:main"
+x12sdk-generate = "x12sdk.generate.cli:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }
