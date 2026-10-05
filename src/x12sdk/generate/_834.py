@@ -18,6 +18,7 @@ from typing import Dict, List
 from ..support import count_segments
 from ..v5010.segments import (
     BgnSegment,
+    DsbSegment,
     HdSegment,
     N3Segment,
     N4Segment,
@@ -30,6 +31,8 @@ from ..v5010.x12_834_005010X220A1.loops import (
     Loop1000B,
     Loop2000,
     Loop2100A,
+    Loop2100D,
+    Loop2200,
     Loop2300,
 )
 from ..v5010.x12_834_005010X220A1.segments import (
@@ -41,10 +44,18 @@ from ..v5010.x12_834_005010X220A1.segments import (
     Loop2000RefSegment,
     Loop2100ADmgSegment,
     Loop2100ANm1Segment,
+    Loop2100DNm1Segment,
+    Loop2200DtpSegment,
     Loop2300DtpSegment,
 )
 from ..v5010.x12_834_005010X220A1.transaction_set import BenefitEnrollmentAndMaintenance
-from ._spec import CoverageSpec, EnrolleeSpec, EnrollmentSpec
+from ._spec import (
+    CoverageSpec,
+    DisabilitySpec,
+    EmployerSpec,
+    EnrolleeSpec,
+    EnrollmentSpec,
+)
 from ._values import ValueFactory
 
 
@@ -63,6 +74,56 @@ def _coverage(coverage: CoverageSpec, begins: str) -> Loop2300:
                 date_time_period=begins,
             )
         ],
+    )
+
+
+def _employer(employer: EmployerSpec, values: ValueFactory) -> Loop2100D:
+    """Loop 2100D: NM1*36 and an address."""
+    return Loop2100D(
+        nm1_segment=Loop2100DNm1Segment(
+            entity_identifier_code="36",
+            entity_type_qualifier="2",
+            name_last_or_organization_name=employer.name,
+            identification_code_qualifier="ZZ" if employer.identifier else None,
+            identification_code=employer.identifier,
+        ),
+        n3_segment=N3Segment(address_information_1=values.address()),
+        n4_segment=N4Segment(
+            city_name=values.city(),
+            state_province_code=values.state(),
+            postal_code=values.postal_code(),
+        ),
+    )
+
+
+def _disability(disability: DisabilitySpec, values: ValueFactory) -> Loop2200:
+    """Loop 2200: a DSB and the dates of the period it describes."""
+    begins = disability.begins or values.service_date().strftime("%Y%m%d")
+    dates = [
+        Loop2200DtpSegment(
+            date_time_qualifier="360",
+            date_time_period_format_qualifier="D8",
+            date_time_period=begins,
+        )
+    ]
+    if disability.ends:
+        dates.append(
+            Loop2200DtpSegment(
+                date_time_qualifier="361",
+                date_time_period_format_qualifier="D8",
+                date_time_period=disability.ends,
+            )
+        )
+    return Loop2200(
+        dsb_segment=[
+            DsbSegment(
+                disability_type_code=disability.type,
+                quantity=1,
+                product_service_id_qualifier="DX" if disability.diagnosis else None,
+                diagnosis_code=disability.diagnosis,
+            )
+        ],
+        dtp_segment=dates,
     )
 
 
@@ -124,6 +185,12 @@ def _member(
                 gender_code=values.rng.choice(("F", "M")),
             ),
         ),
+        loop_2100d=[_employer(employer, values) for employer in enrollee.employers]
+        or None,
+        loop_2200=[
+            _disability(disability, values) for disability in enrollee.disabilities
+        ]
+        or None,
         loop_2300=[
             _coverage(coverage, coverage_begins) for coverage in enrollee.coverages
         ],
@@ -208,17 +275,33 @@ def random_enrollees(
     Builds a roster mixing subscribers and dependents.
 
     ``dependent_rate`` is the share of records marked as a dependent, so both
-    kinds of INS record appear by default.
+    kinds of INS record appear by default. Every subscriber carries an
+    employer, a quarter of them a second one, and a fifth of all members a
+    disability period, so the repeating 2100D and 2200 loops, where a reader
+    that keeps only the last record goes wrong, are exercised by default.
     """
     enrollees: List[EnrolleeSpec] = []
     for _ in range(count):
         dependent = values.rng.random() < dependent_rate
         lines = values.rng.sample(("HLT", "DEN", "VIS"), values.rng.randint(1, 3))
+
+        employers: List[EmployerSpec] = []
+        if not dependent:
+            employers.append(EmployerSpec(name=values.employer_name()))
+            if values.rng.random() < 0.25:
+                employers.append(EmployerSpec(name=values.employer_name()))
+
+        disabilities: List[DisabilitySpec] = []
+        if values.rng.random() < 0.2:
+            disabilities.append(DisabilitySpec(type=values.rng.choice(("1", "2", "3"))))
+
         enrollees.append(
             EnrolleeSpec(
                 coverages=tuple(CoverageSpec(insurance_line=line) for line in lines),
                 dependent=dependent,
                 relationship=values.rng.choice(("19", "01")) if dependent else "18",
+                employers=tuple(employers),
+                disabilities=tuple(disabilities),
             )
         )
     return enrollees

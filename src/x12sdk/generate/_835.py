@@ -19,6 +19,7 @@ from ..v5010.segments import (
     N3Segment,
     N4Segment,
     Nm1Segment,
+    PlbSegment,
     SeSegment,
     SvcSegment,
 )
@@ -40,7 +41,13 @@ from ..v5010.x12_835_005010X221A1.segments import (
     Loop2110CasSegment,
 )
 from ..v5010.x12_835_005010X221A1.transaction_set import HealthCareClaimPayment
-from ._spec import AdjustmentSpec, ClaimSpec, RemittanceSpec, ServiceLineSpec
+from ._spec import (
+    AdjustmentSpec,
+    ClaimSpec,
+    ProviderAdjustmentSpec,
+    RemittanceSpec,
+    ServiceLineSpec,
+)
 from ._values import ValueFactory
 
 
@@ -103,6 +110,30 @@ def _claim(claim: ClaimSpec, index: int, values: ValueFactory) -> Loop2100:
     )
 
 
+def _plb_segment(
+    adjustments: Sequence[ProviderAdjustmentSpec], payee_npi: str, values: ValueFactory
+) -> PlbSegment:
+    """
+    Renders provider-level adjustments as one PLB segment.
+
+    PLB01 names the payee, PLB02 the fiscal period the adjustment belongs to,
+    then up to six reason/amount pairs. PLB03-1 is the reason code and PLB03-2
+    an identifier for what it refers to (a claim, a prior check), rendered as
+    the composite ``WO:PCN000001``.
+    """
+    fields: Dict = {
+        "provider_identifier": payee_npi,
+        "fiscal_period_date": f"{values.service_date().year}1231",
+    }
+    for position, adjustment in enumerate(adjustments, start=1):
+        reason = adjustment.reason
+        if adjustment.identifier:
+            reason = f"{reason}:{adjustment.identifier}"
+        fields[f"adjustment_reason_code_{position}"] = reason
+        fields[f"provider_adjustment_amount_{position}"] = adjustment.amount
+    return PlbSegment(**fields)
+
+
 def build_835(
     spec: RemittanceSpec,
     *,
@@ -118,6 +149,7 @@ def build_835(
     :return: A validated ``HealthCareClaimPayment``.
     """
     values = ValueFactory(seed)
+    payee_npi = values.npi()
 
     structure: Dict = {
         "header": Header(
@@ -155,7 +187,7 @@ def build_835(
                 entity_identifier_code="PE",
                 name=spec.payee_name or values.provider_name(),
                 identification_code_qualifier="XX",
-                identification_code=values.npi(),
+                identification_code=payee_npi,
             ),
         ),
         "loop_2000": [
@@ -169,25 +201,69 @@ def build_835(
         ],
     }
 
-    # SE01 counts every segment from ST through SE inclusive. Count the
-    # structure with a stand-in footer, then attach the real one.
-    placeholder = dict(
-        structure,
-        footer={
-            "se_segment": {
-                "transaction_segment_count": 1,
-                "transaction_set_control_number": control_number,
-            }
-        },
+    plb = (
+        _plb_segment(spec.provider_adjustments, payee_npi, values)
+        if spec.provider_adjustments
+        else None
     )
+
+    # SE01 counts every segment from ST through SE inclusive. Count the
+    # structure with a stand-in footer, then attach the real one. The PLB is
+    # part of the footer, so it goes into the stand-in as a dict to be counted.
+    footer_fields: Dict = {
+        "se_segment": {
+            "transaction_segment_count": 1,
+            "transaction_set_control_number": control_number,
+        }
+    }
+    if plb is not None:
+        footer_fields["plb_segment"] = plb.model_dump()
+    placeholder = dict(structure, footer=footer_fields)
     structure["footer"] = Footer(
+        plb_segment=plb,
         se_segment=SeSegment(
             transaction_segment_count=count_segments(placeholder),
             transaction_set_control_number=control_number,
-        )
+        ),
     )
 
     return HealthCareClaimPayment(**structure)
+
+
+def random_provider_adjustments(
+    count: int, values: ValueFactory, claims: Sequence[ClaimSpec]
+) -> List[ProviderAdjustmentSpec]:
+    """
+    Invents provider-level adjustments small enough to leave the check positive.
+
+    Two kinds appear: an overpayment recovery (``WO``) naming the claim it
+    recovers, taken out of the payment, and interest owed to the provider
+    (``L6``), added to it as a negative amount. Each is at most a few percent
+    of what the claims pay, so BPR02 stays non-negative however many are asked
+    for (up to the six a PLB holds).
+    """
+    paid = sum((claim.paid for claim in claims), Decimal("0.00"))
+    adjustments: List[ProviderAdjustmentSpec] = []
+    for index in range(count):
+        share = (paid * Decimal("0.02")).quantize(Decimal("0.01"))
+        if values.rng.random() < 0.6 and share > 0:
+            claim = claims[values.rng.randrange(len(claims))]
+            adjustments.append(
+                ProviderAdjustmentSpec(
+                    reason="WO",
+                    amount=share,
+                    identifier=claim.patient_control_number
+                    or values.claim_number(claims.index(claim) + 1),
+                )
+            )
+        else:
+            interest = (paid * Decimal("0.005")).quantize(Decimal("0.01"))
+            adjustments.append(
+                ProviderAdjustmentSpec(
+                    reason="L6", amount=-(interest or Decimal("0.01"))
+                )
+            )
+    return adjustments
 
 
 def random_claims(

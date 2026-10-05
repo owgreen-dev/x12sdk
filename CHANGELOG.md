@@ -7,6 +7,20 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 ## Unreleased
 
 ### Added
+- **Provider-level adjustments on generated 835s.** `generate_835` takes
+  `provider_adjustments`: a count to invent, `ProviderAdjustmentSpec`s to
+  follow (`provider_adjustment("WO", "25.00", "PCN000099")`), or the default,
+  which invents one when the claims are invented and none when they are
+  specified. Rendered as one PLB segment naming the payee, up to six pairs;
+  BPR02 is derived as the claim payments less the adjustments, and a
+  specification that would make it negative is rejected. `x12sdk-generate 835
+  --provider-adjustments N`.
+- **Employers and disability periods on generated 834s.** `EnrolleeSpec` takes
+  `employers` (up to three `EmployerSpec`s, loop 2100D) and `disabilities`
+  (`DisabilitySpec`s with type, dates and diagnosis, loop 2200). Invented
+  rosters give every subscriber an employer, a quarter of them a second, and a
+  fifth of all members a disability period, so the two repeating loops the
+  audit suite found mis-parsed in 1.1.0 now have generated coverage.
 - **`X12ModelWriter`**, the mirror image of `X12ModelReader`: a context manager
   that collects transaction models and writes them as one interchange when the
   block exits, through `write_transactions`, so envelopes and control numbers
@@ -21,6 +35,14 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   a command you can paste. The parsing CLI, `x12sdk`, is unchanged.
 - **Python 3.14** is tested in CI and declared in the package classifiers. The
   suite passes unchanged; nothing in the package needed to move.
+
+### Changed
+- **Invented files differ from 2.1.0 for the same seed.** A default 835 now
+  carries a PLB, a default 834 carries employers and disability periods, and
+  the payee NPI is drawn earlier, so counts-based output (`claims=5`,
+  `enrollees=5`) is not byte-identical to what 2.1.0 produced. Specified
+  scenarios are unchanged except where they now ask for the new loops. Pin the
+  x12sdk version where byte-stable fixtures matter.
 
 ## 2.1.0 — 2026-09-20
 

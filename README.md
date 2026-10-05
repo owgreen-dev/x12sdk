@@ -28,19 +28,20 @@ Either way:
 ISA*00*          *00*          *30*SYNTHETICPAYER *30*SYNTHETICPROV  *260101*1200*^*00501*000000001*0*T*:~
 GS*HP*SYNTHETICPAYER*SYNTHETICPROV*20260101*1200*1*X*005010X221A1~
 ST*835*0001~
-BPR*I*1725.90*C*CHK~
-TRN*1*4942859576*0181590830~
+BPR*I*1734.53*C*CHK~
+TRN*1*0922121677*1661318600~
 N1*PR*EXAMPLE HEALTH PLAN~
-N3*615 MAIN BLVD~
-N4*GREENVILLE*OH*41544~
-N1*PE*EXAMPLE MEDICAL GROUP*XX*2860913906~
+N3*9265 MAIN AVE~
+N4*FRANKLIN*IL*85642~
+N1*PE*EXAMPLE MEDICAL GROUP*XX*1260181593~
 LX*1~
-CLP*PCN000001*1*1797.81*1258.47**CH*710085427120~
-NM1*QC*1*DOE*JAMES****MI*X410965605~
+CLP*PCN000001*1*1797.81*1258.47**CH*148194179472~
+NM1*QC*1*ANDERSON*LINDA****MI*X410965605~
 SVC*HC:71046*1797.81*1258.47**1~
 CAS*CO*45*539.34~
 ...
-SE*19*0001~
+PLB*1260181593*20251231*L6*-8.63~
+SE*20*0001~
 GE*1*1~
 IEA*1*000000001~
 ```
@@ -217,6 +218,7 @@ x12sdk-generate 835 --seed 7 --claims 2                     # to stdout
 x12sdk-generate 837p --seed 7 --claims 25 --dependent-rate 0.5 --out claims.837
 x12sdk-generate 834 --enrollees 10 --sponsor-name "EXAMPLE EMPLOYER"
 x12sdk-generate 270 --members 3 -o inquiry.270 && x12sdk-generate 271 --members 3 -o response.271
+x12sdk-generate 835 --claims 10 --provider-adjustments 2   # two PLB adjustments; 0 for none
 ```
 
 The count option is named for what the set carries (`--claims`, `--enrollees`,
@@ -320,6 +322,44 @@ spec = SubmissionSpec(
     ]
 )
 submission = generate_837p(seed=1, claims=spec)
+```
+
+A remittance can also move money outside any claim, in the PLB segment: an
+overpayment recovered, interest owed. Invented remittances carry one such
+adjustment by default; a described scenario carries only what it describes,
+and the check amount in BPR02 is derived from both:
+
+```python
+from x12sdk.generate import ClaimSpec, generate_835, provider_adjustment
+
+remittance = generate_835(
+    seed=1,
+    claims=[ClaimSpec(charge="500.00")],
+    provider_adjustments=[provider_adjustment("WO", "25.00", "PCN000099")],
+)
+# PLB*<payee NPI>*20251231*WO:PCN000099*25.00~   and   BPR*I*475.00*...
+```
+
+An enrollment roster has its own repeating loops that readers get wrong: a
+member can have up to three employers (2100D) and several disability periods
+(2200), and a parser that keeps only the last of each looks correct on most
+files. Invented rosters exercise both by default; to pin them down:
+
+```python
+from x12sdk.generate import DisabilitySpec, EmployerSpec, EnrolleeSpec, EnrollmentSpec, generate_834
+
+roster = EnrollmentSpec(
+    enrollees=[
+        EnrolleeSpec(
+            employers=[EmployerSpec("FIRST EMPLOYER"), EmployerSpec("SECOND EMPLOYER")],
+            disabilities=[
+                DisabilitySpec(type="2", begins="20250101", ends="20250601"),
+                DisabilitySpec(type="3", begins="20250701"),
+            ],
+        )
+    ]
+)
+enrollment = generate_834(seed=1, enrollees=roster)
 ```
 
 ## Denial analytics

@@ -18,6 +18,8 @@ import pytest
 
 from x12sdk.generate import (
     CoverageSpec,
+    DisabilitySpec,
+    EmployerSpec,
     EnrolleeSpec,
     EnrollmentSpec,
     generate_834,
@@ -259,3 +261,104 @@ def test_more_than_one_disability_period_survives_the_parser():
         for period in periods
         for segment in (period.dtp_segment or [])
     ] == ["2025-01-01", "2025-06-01"]
+
+
+# --- the repeating loops the audit found mis-parsed ------------------------
+
+
+def _models(x12: str):
+    with X12ModelReader(x12) as reader:
+        return list(reader.models())
+
+
+def test_specified_employers_appear_in_order_and_parse_back(tmp_path):
+    spec = EnrollmentSpec(
+        enrollees=[
+            EnrolleeSpec(
+                employers=(
+                    EmployerSpec("FIRST EMPLOYER"),
+                    EmployerSpec("SECOND EMPLOYER", identifier="EMP-2"),
+                )
+            )
+        ]
+    )
+    x12 = generate_834(seed=1, enrollees=spec)
+    nm1 = [s for s in _segments(x12) if s[:2] == ["NM1", "36"]]
+    assert [s[3] for s in nm1] == ["FIRST EMPLOYER", "SECOND EMPLOYER"]
+    assert nm1[1][8:10] == ["ZZ", "EMP-2"], "an identifier renders as NM108/NM109"
+
+    employers = _read(x12, tmp_path)[0].loop_2000[0].loop_2100d
+    assert [e.nm1_segment.name_last_or_organization_name for e in employers] == [
+        "FIRST EMPLOYER",
+        "SECOND EMPLOYER",
+    ]
+
+
+def test_specified_disabilities_carry_their_dates_and_parse_back(tmp_path):
+    spec = EnrollmentSpec(
+        enrollees=[
+            EnrolleeSpec(
+                disabilities=(
+                    DisabilitySpec(
+                        type="2", begins="20250101", ends="20250601", diagnosis="E119"
+                    ),
+                    DisabilitySpec(type="3", begins="20250701"),
+                )
+            )
+        ]
+    )
+    x12 = generate_834(seed=1, enrollees=spec)
+    assert "DSB*2*1*****DX*E119~" in x12
+    assert "DTP*360*D8*20250101~" in x12 and "DTP*361*D8*20250601~" in x12
+    assert "DSB*3*1~" in x12 and "DTP*360*D8*20250701~" in x12
+
+    periods = _read(x12, tmp_path)[0].loop_2000[0].loop_2200
+    assert len(periods) == 2, "both periods survive; the 1.1.0 parser kept one"
+    assert [p.dsb_segment[0].disability_type_code for p in periods] == ["2", "3"]
+    assert [len(p.dtp_segment) for p in periods] == [2, 1]
+
+
+def test_the_repeating_loops_round_trip(tmp_path):
+    spec = EnrollmentSpec(
+        enrollees=[
+            EnrolleeSpec(
+                employers=tuple(EmployerSpec(f"EMPLOYER {n}") for n in "ABC"),
+                disabilities=(DisabilitySpec(type="1"), DisabilitySpec(type="2")),
+            ),
+            EnrolleeSpec(dependent=True),
+        ]
+    )
+    path = tmp_path / "loops.834"
+    path.write_text(generate_834(seed=2, enrollees=spec))
+    assert_eq_model(str(path))
+
+
+def test_more_than_three_employers_are_rejected():
+    with pytest.raises(ValueError, match="at most three"):
+        EnrolleeSpec(employers=tuple(EmployerSpec(f"E{n}") for n in range(4)))
+
+
+def test_an_unknown_disability_type_is_rejected():
+    with pytest.raises(ValueError, match="disability type"):
+        DisabilitySpec(type="9")
+
+
+def test_invented_rosters_exercise_both_loops_by_default():
+    saw_second_employer = saw_disability = False
+    for seed in range(12):
+        for member in _models(generate_834(seed=seed, enrollees=8))[0].loop_2000:
+            if member.loop_2100d and len(member.loop_2100d) >= 2:
+                saw_second_employer = True
+            if member.loop_2200:
+                saw_disability = True
+    assert saw_second_employer, "no roster had a member with two employers"
+    assert saw_disability, "no roster had a disability period"
+
+
+def test_dependents_carry_no_employer():
+    for seed in range(6):
+        for member in _models(generate_834(seed=seed, enrollees=10))[0].loop_2000:
+            if member.ins_segment.member_indicator == "N":
+                assert not member.loop_2100d
+            else:
+                assert member.loop_2100d, "every subscriber has an employer"

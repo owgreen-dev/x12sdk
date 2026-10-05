@@ -100,16 +100,68 @@ class ClaimSpec:
 
 
 @dataclass(frozen=True)
+class ProviderAdjustmentSpec:
+    """
+    One provider-level adjustment: money moved at the payee level, outside any
+    claim, carried in the PLB segment. A positive amount is taken out of the
+    payment (an overpayment recovery, a withholding); a negative amount is added
+    to it (interest owed to the provider).
+    """
+
+    reason: str
+    amount: Decimal
+    identifier: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.reason:
+            raise ValueError("a provider adjustment needs a reason code (PLB03-1)")
+        if not isinstance(self.amount, Decimal):
+            object.__setattr__(self, "amount", Decimal(str(self.amount)))
+
+
+@dataclass(frozen=True)
 class RemittanceSpec:
-    """A whole 835: one payer paying one payee for a set of claims."""
+    """
+    A whole 835: one payer paying one payee for a set of claims.
+
+    The check amount in BPR02 is derived: every claim's payment, less the
+    provider-level adjustments. A remittance whose adjustments exceed what the
+    claims pay would need a negative check, which the 835 does not allow, so
+    it cannot be written down.
+    """
 
     claims: Sequence[ClaimSpec]
     payer_name: Optional[str] = None
     payee_name: Optional[str] = None
+    provider_adjustments: Sequence[ProviderAdjustmentSpec] = field(
+        default_factory=tuple
+    )
+
+    def __post_init__(self) -> None:
+        if len(self.provider_adjustments) > 6:
+            raise ValueError(
+                "at most six provider adjustments fit on a remittance (one PLB "
+                f"segment); got {len(self.provider_adjustments)}"
+            )
+        if self.total_paid < 0:
+            raise ValueError(
+                f"provider adjustments total {self.provider_adjustment_total} but "
+                f"the claims pay only {self.claims_paid}; BPR02 cannot be negative"
+            )
+
+    @property
+    def claims_paid(self) -> Decimal:
+        """The sum of CLP04 over every claim, before provider-level adjustments."""
+        return sum((claim.paid for claim in self.claims), Decimal("0.00"))
+
+    @property
+    def provider_adjustment_total(self) -> Decimal:
+        return sum((a.amount for a in self.provider_adjustments), Decimal("0.00"))
 
     @property
     def total_paid(self) -> Decimal:
-        return sum((claim.paid for claim in self.claims), Decimal("0.00"))
+        """BPR02: what the check is for. Derived, never supplied."""
+        return self.claims_paid - self.provider_adjustment_total
 
 
 #: PAT01 relationship codes, used when the patient is not the subscriber.
@@ -318,6 +370,44 @@ class CoverageSpec:
     plan_description: Optional[str] = None
 
 
+#: DSB01 disability type codes: short-term, long-term, permanent total, none.
+DISABILITY_TYPE_CODES = ("1", "2", "3", "4")
+
+
+@dataclass(frozen=True)
+class DisabilitySpec:
+    """
+    One disability period on a member (loop 2200: a DSB with its dates).
+
+    A member can carry several, and they repeat as separate loops; code that
+    keeps only the last one is a bug this generator exists to expose.
+    """
+
+    type: str = "2"
+    begins: Optional[str] = None
+    ends: Optional[str] = None
+    diagnosis: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.type not in DISABILITY_TYPE_CODES:
+            raise ValueError(
+                f"disability type must be one of {DISABILITY_TYPE_CODES}, "
+                f"got {self.type!r}"
+            )
+
+
+@dataclass(frozen=True)
+class EmployerSpec:
+    """One employer of a member (loop 2100D). Up to three per member."""
+
+    name: str
+    identifier: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.name:
+            raise ValueError("an employer needs a name")
+
+
 @dataclass(frozen=True)
 class EnrolleeSpec:
     """
@@ -334,6 +424,8 @@ class EnrolleeSpec:
     member_id: Optional[str] = None
     benefit_status: str = "A"
     maintenance_type: str = "021"
+    employers: Sequence[EmployerSpec] = field(default_factory=tuple)
+    disabilities: Sequence[DisabilitySpec] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not self.coverages:
@@ -341,6 +433,11 @@ class EnrolleeSpec:
         if not self.dependent and self.relationship != "18":
             # INS02 is 18, self, whenever the member is the subscriber
             object.__setattr__(self, "relationship", "18")
+        if len(self.employers) > 3:
+            raise ValueError(
+                f"a member can have at most three employers (loop 2100D), "
+                f"got {len(self.employers)}"
+            )
 
 
 @dataclass(frozen=True)
@@ -371,6 +468,20 @@ def patient_responsibility(reason: str, amount) -> AdjustmentSpec:
     return AdjustmentSpec(group="PR", reason=reason, amount=Decimal(str(amount)))
 
 
+def provider_adjustment(
+    reason: str, amount, identifier: Optional[str] = None
+) -> ProviderAdjustmentSpec:
+    """
+    Shorthand for a PLB provider-level adjustment.
+
+    >>> provider_adjustment("WO", "25.00", "PCN000001").amount
+    Decimal('25.00')
+    """
+    return ProviderAdjustmentSpec(
+        reason=reason, amount=Decimal(str(amount)), identifier=identifier
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "BENEFIT_STATUS_CODES",
@@ -378,13 +489,17 @@ __all__ = [
     "ClaimSpec",
     "ClaimStatusSpec",
     "CoverageSpec",
+    "DISABILITY_TYPE_CODES",
+    "DisabilitySpec",
     "EligibilitySpec",
+    "EmployerSpec",
     "EnrolleeSpec",
     "EnrollmentSpec",
     "GROUP_CODES",
     "MemberSpec",
     "PATIENT_RELATIONSHIP_CODES",
     "PatientSpec",
+    "ProviderAdjustmentSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
     "StatusPatientSpec",
@@ -392,4 +507,5 @@ __all__ = [
     "TrackedClaimSpec",
     "denial",
     "patient_responsibility",
+    "provider_adjustment",
 ]
