@@ -54,13 +54,14 @@ from typing import Optional, Sequence, Union
 
 from ..io import write_transactions
 from ._834 import build_834, random_enrollees
-from ._835 import build_835, random_claims
+from ._835 import build_835, random_claims, random_provider_adjustments
 from ._837i import build_837i
 from ._837p import build_837p, claim_specs_to_patients, random_patients
 from ._claim_status import build_276, build_277, random_status_patients
 from ._eligibility import build_270, build_271, random_members
 from ._spec import (
     BENEFIT_STATUS_CODES,
+    DISABILITY_TYPE_CODES,
     GROUP_CODES,
     PATIENT_RELATIONSHIP_CODES,
     AdjustmentSpec,
@@ -68,11 +69,14 @@ from ._spec import (
     ClaimSpec,
     ClaimStatusSpec,
     CoverageSpec,
+    DisabilitySpec,
     EligibilitySpec,
+    EmployerSpec,
     EnrolleeSpec,
     EnrollmentSpec,
     MemberSpec,
     PatientSpec,
+    ProviderAdjustmentSpec,
     RemittanceSpec,
     ServiceLineSpec,
     StatusPatientSpec,
@@ -80,6 +84,7 @@ from ._spec import (
     TrackedClaimSpec,
     denial,
     patient_responsibility,
+    provider_adjustment,
 )
 from ._values import ValueFactory
 
@@ -93,6 +98,7 @@ def generate_835(
     *,
     seed: int = 0,
     claims: Union[int, Sequence[ClaimSpec]] = 5,
+    provider_adjustments: Union[int, Sequence[ProviderAdjustmentSpec], None] = None,
     payer_name: Optional[str] = None,
     payee_name: Optional[str] = None,
     sender_id: str = "SYNTHETICPAYER",
@@ -104,6 +110,11 @@ def generate_835(
 
     :param seed: Reproduces the same file when unchanged.
     :param claims: A number of claims to invent, or specifications to follow.
+    :param provider_adjustments: Provider-level (PLB) adjustments: a number to
+        invent, specifications to follow, or ``None`` for the default, which is
+        one invented adjustment when the claims are invented and none when they
+        are specified, so a described scenario contains only what it describes.
+        At most six fit on a remittance.
     :param payer_name: Defaults to a synthetic plan name.
     :param payee_name: Defaults to a synthetic provider name.
     :param sender_id: ISA06 / GS02.
@@ -111,13 +122,28 @@ def generate_835(
     :param control_number: ST02 / SE02, at least 4 characters.
     :return: The interchange, ISA through IEA.
     """
+    values = ValueFactory(seed)
     if isinstance(claims, int):
         if claims < 1:
             raise ValueError("claims must be at least 1")
-        claims = random_claims(claims, ValueFactory(seed))
+        claims = random_claims(claims, values)
+        if provider_adjustments is None:
+            provider_adjustments = 1
+    elif provider_adjustments is None:
+        provider_adjustments = 0
+
+    if isinstance(provider_adjustments, int):
+        if not 0 <= provider_adjustments <= 6:
+            raise ValueError("provider_adjustments must be between 0 and 6")
+        provider_adjustments = random_provider_adjustments(
+            provider_adjustments, values, list(claims)
+        )
 
     spec = RemittanceSpec(
-        claims=list(claims), payer_name=payer_name, payee_name=payee_name
+        claims=list(claims),
+        payer_name=payer_name,
+        payee_name=payee_name,
+        provider_adjustments=list(provider_adjustments),
     )
     transaction = build_835(spec, seed=seed, control_number=control_number)
     return write_transactions(
@@ -471,13 +497,17 @@ __all__ = [
     "ClaimSpec",
     "ClaimStatusSpec",
     "CoverageSpec",
+    "DISABILITY_TYPE_CODES",
+    "DisabilitySpec",
     "EligibilitySpec",
+    "EmployerSpec",
     "EnrolleeSpec",
     "EnrollmentSpec",
     "GROUP_CODES",
     "MemberSpec",
     "PATIENT_RELATIONSHIP_CODES",
     "PatientSpec",
+    "ProviderAdjustmentSpec",
     "RemittanceSpec",
     "ServiceLineSpec",
     "StatusPatientSpec",
@@ -503,9 +533,11 @@ __all__ = [
     "generate_837i",
     "generate_837p",
     "patient_responsibility",
+    "provider_adjustment",
     "random_claims",
     "random_enrollees",
     "random_members",
     "random_patients",
+    "random_provider_adjustments",
     "random_status_patients",
 ]

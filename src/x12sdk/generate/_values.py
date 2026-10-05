@@ -64,6 +64,14 @@ _PROVIDER_NAMES: Sequence[str] = (
     "DEMO HEALTH CENTER",
     "PLACEHOLDER ASSOCIATES",
 )
+_EMPLOYER_NAMES: Sequence[str] = (
+    "EXAMPLE EMPLOYER",
+    "SAMPLE MANUFACTURING INC",
+    "TEST LOGISTICS LLC",
+    "DEMO RETAIL GROUP",
+    "PLACEHOLDER UNIVERSITY",
+    "MODEL COUNTY SCHOOLS",
+)
 _CITIES: Sequence[str] = (
     "SPRINGFIELD",
     "FAIRVIEW",
@@ -162,6 +170,9 @@ class ValueFactory:
 
     def provider_name(self) -> str:
         return self.rng.choice(_PROVIDER_NAMES)
+
+    def employer_name(self) -> str:
+        return self.rng.choice(_EMPLOYER_NAMES)
 
     def address(self) -> str:
         return f"{self.rng.randint(1, 9999)} {self.rng.choice(('MAIN', 'OAK', 'ELM', 'PARK', 'FIRST'))} {self.rng.choice(('ST', 'AVE', 'RD', 'BLVD'))}"

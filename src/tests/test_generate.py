@@ -19,6 +19,7 @@ from x12sdk.generate import (
     denial,
     generate_835,
     patient_responsibility,
+    provider_adjustment,
 )
 from x12sdk.generate._values import ValueFactory, _luhn_check_digit
 from x12sdk.io import X12ModelReader
@@ -226,6 +227,100 @@ def test_red_cross_reference_validation_actually_fires():
     with pytest.raises(ValueError, match="American Red Cross"):
         build("18")
     build("1W")  # an allowed qualifier is still accepted
+
+
+# --- provider-level adjustments (PLB) --------------------------------------
+
+
+def _segment(x12: str, name: str):
+    return (
+        next(s for s in x12.split("\n") if s.startswith(name + "*"))
+        .rstrip("~")
+        .split("*")
+    )
+
+
+def test_a_specified_provider_adjustment_appears_verbatim():
+    spec = [ClaimSpec(charge="500.00", lines=[ServiceLineSpec(charge="500.00")])]
+    x12 = generate_835(
+        seed=1,
+        claims=spec,
+        provider_adjustments=[provider_adjustment("WO", "25.00", "PCN000099")],
+    )
+    plb = _segment(x12, "PLB")
+    payee = next(s for s in x12.split("\n") if s.startswith("N1*PE*"))
+    assert plb[1] == payee.rstrip("~").split("*")[4], "PLB01 names the payee"
+    assert plb[3] == "WO:PCN000099", "reason and identifier form the composite"
+    assert plb[4] == "25.00"
+    assert _segment(x12, "BPR")[2] == "475.00", "BPR02 is claim payments less the PLB"
+
+
+def test_a_negative_provider_adjustment_adds_to_the_check():
+    x12 = generate_835(
+        seed=1,
+        claims=[ClaimSpec(charge="100.00")],
+        provider_adjustments=[provider_adjustment("L6", "-1.50")],
+    )
+    assert _segment(x12, "PLB")[3:5] == ["L6", "-1.50"]
+    assert _segment(x12, "BPR")[2] == "101.50"
+
+
+def test_invented_claims_carry_one_adjustment_and_specified_claims_none():
+    assert generate_835(seed=3, claims=4).count("\nPLB*") == 1
+    assert "PLB*" not in generate_835(seed=3, claims=[ClaimSpec(charge="10.00")])
+    assert "PLB*" not in generate_835(seed=3, claims=4, provider_adjustments=0)
+
+
+def test_several_adjustments_share_one_plb_segment():
+    x12 = generate_835(seed=3, claims=4, provider_adjustments=3)
+    assert x12.count("\nPLB*") == 1
+    assert len(_segment(x12, "PLB")) == 3 + 2 * 3, "id, date, then three pairs"
+
+
+def test_the_plb_is_counted_in_se01():
+    x12 = generate_835(seed=2, claims=3, provider_adjustments=2)
+    body = [s for s in x12.replace("\n", "").split("~") if s]
+    transaction = [s for s in body if s.split("*")[0] not in ("ISA", "GS", "GE", "IEA")]
+    assert int(_segment(x12, "SE")[1]) == len(transaction)
+
+
+def test_provider_adjustments_parse_back_and_round_trip(tmp_path):
+    x12 = generate_835(seed=4, claims=3, provider_adjustments=2)
+    plb = _read(x12)[0].footer.plb_segment
+    assert plb is not None
+    assert plb.adjustment_reason_code_2 is not None
+    path = tmp_path / "plb.835"
+    path.write_text(x12)
+    assert_eq_model(str(path))
+
+
+def test_invented_adjustments_never_drive_the_check_negative():
+    for seed in range(25):
+        x12 = generate_835(seed=seed, claims=2, provider_adjustments=6)
+        assert Decimal(_segment(x12, "BPR")[2]) >= 0
+
+
+def test_adjustments_exceeding_the_payment_cannot_be_specified():
+    with pytest.raises(ValueError, match="cannot be negative"):
+        RemittanceSpec(
+            claims=[ClaimSpec(charge="10.00")],
+            provider_adjustments=[provider_adjustment("WO", "11.00")],
+        )
+
+
+def test_more_than_six_provider_adjustments_are_rejected():
+    with pytest.raises(ValueError, match="between 0 and 6"):
+        generate_835(seed=1, claims=2, provider_adjustments=7)
+    with pytest.raises(ValueError, match="at most six"):
+        RemittanceSpec(
+            claims=[ClaimSpec(charge="1000.00")],
+            provider_adjustments=[provider_adjustment("L6", "-1.00")] * 7,
+        )
+
+
+def test_a_provider_adjustment_needs_a_reason():
+    with pytest.raises(ValueError, match="reason code"):
+        provider_adjustment("", "1.00")
 
 
 # --- integration with denial analytics -------------------------------------

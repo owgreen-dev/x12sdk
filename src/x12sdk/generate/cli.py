@@ -43,6 +43,7 @@ class _TransactionSet(NamedTuple):
     names: Sequence[str]
     dependent_rate: bool
     help: str
+    counts: Sequence[str] = ()
 
 
 _SETS: Dict[str, _TransactionSet] = {
@@ -53,6 +54,7 @@ _SETS: Dict[str, _TransactionSet] = {
         ("payer_name", "payee_name"),
         False,
         "claim payment / remittance advice",
+        ("provider_adjustments",),
     ),
     "837p": _TransactionSet(
         generate_837p,
@@ -165,6 +167,10 @@ def _create_arg_parser() -> argparse.ArgumentParser:
             )
         for name in spec.names:
             sub.add_argument(_option(name), metavar="NAME", help=f"{name} override")
+        for name in spec.counts:
+            sub.add_argument(
+                _option(name), type=int, metavar="N", help=f"number of {name} to invent"
+            )
         sub.add_argument("--sender-id", metavar="ID", help="ISA06 / GS02 override")
         sub.add_argument("--receiver-id", metavar="ID", help="ISA08 / GS03 override")
         sub.add_argument(
@@ -187,6 +193,7 @@ def _generate(args: argparse.Namespace) -> str:
     for name in (
         "dependent_rate",
         *spec.names,
+        *spec.counts,
         "sender_id",
         "receiver_id",
         "control_number",
