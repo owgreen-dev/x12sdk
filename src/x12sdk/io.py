@@ -280,6 +280,18 @@ def _transaction_identity(transaction: X12SegmentGroup) -> Tuple[str, str]:
     )
 
 
+def _is_transaction_set(model: object) -> bool:
+    """
+    True for a whole transaction set model, as opposed to one of its segments or
+    loops, which also subclass X12SegmentGroup and also live in the x12_<code>
+    package. Transaction sets are the classes defined in a ``transaction_set``
+    module; everything else in the package is a part of one.
+    """
+    return isinstance(model, X12SegmentGroup) and type(model).__module__.endswith(
+        ".transaction_set"
+    )
+
+
 def _interchange_id(value: str, field: str) -> str:
     """
     Validates an interchange id and pads it to the 15 characters ISA requires.
@@ -488,6 +500,12 @@ class X12ModelWriter:
         :raises ValueError: if the model is not a transaction set, so the error
             points at the offending ``write`` rather than at the close.
         """
+        if not _is_transaction_set(transaction):
+            raise ValueError(
+                f"{type(transaction).__name__} is not a transaction set model; "
+                "write() takes the models X12ModelReader.models() yields, not "
+                "their segments or loops"
+            )
         _transaction_identity(transaction)
         self._transactions.append(transaction)
 

@@ -103,10 +103,15 @@ def test_non_transaction_models_are_rejected_at_the_write_call():
     """The error names the write, not a close that happens somewhere later."""
     remittance = _read(generate_835(seed=5, claims=1))[0]
     with X12ModelWriter(**ENVELOPE) as writer:
-        with pytest.raises(ValueError, match="Cannot determine the transaction set"):
+        with pytest.raises(ValueError, match="not a transaction set model"):
             writer.write(remittance.header.st_segment)
+        with pytest.raises(ValueError, match="not a transaction set model"):
+            writer.write(remittance.loop_2000[0])
+        with pytest.raises(ValueError, match="not a transaction set model"):
+            writer.write("ST*835*0001~")
         writer.write(remittance)
     assert writer.interchange is not None
+    assert len(writer) == 1
 
 
 def test_usable_without_a_with_block():
