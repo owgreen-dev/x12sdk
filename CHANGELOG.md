@@ -4,6 +4,20 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Added
+- **The 837D dental claim (005010X224A2) parses and writes**, closing the
+  read side of #2. It shares the professional claim's envelope and hierarchy;
+  the claim carries orthodontic months (DN1) and missing or to-be-extracted
+  teeth (DN2), and each line carries the dental procedure (SV3) with tooth
+  numbers and surfaces (TOO). Four segments are new to the library: SV3,
+  TOO, DN1 and DN2. Three synthetic samples join the round-trip sweep: a
+  subscriber's filling, a child's orthodontic claim, and a tertiary claim
+  whose crown was adjudicated by two earlier payers. Files declaring
+  005010X224 or 005010X224A1 read with the same model. The generator and
+  accessor follow before 2.3.0.
+
 ## 2.2.0 — 2026-10-21
 
 ### Added

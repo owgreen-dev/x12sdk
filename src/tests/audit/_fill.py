@@ -261,7 +261,7 @@ def _claim_charge_matches_lines(kwargs: Dict[str, Any]) -> Dict[str, Any]:
     """
     total = Decimal("0.00")
     for line in kwargs.get("loop_2400", []):
-        for attr in ("sv1_segment", "sv2_segment"):
+        for attr in ("sv1_segment", "sv2_segment", "sv3_segment"):
             segment = getattr(line, attr, None)
             if segment is not None and hasattr(segment, "line_item_charge_amount"):
                 total += segment.line_item_charge_amount
@@ -275,6 +275,7 @@ for _package in (
     "837_004010X098A1",
     "837_005010X222A2",
     "837_005010X223A3",
+    "837_005010X224A2",
 ):
     OVERRIDES[(_package, "Loop2300")] = _claim_charge_matches_lines
 

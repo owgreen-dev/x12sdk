@@ -3297,6 +3297,78 @@ class Ts3Segment(X12Segment):
 
 
 # load segment classes into a lookup table indexed by segment name
+class Dn1Segment(X12Segment):
+    """
+    Orthodontic Information
+    Example:
+        DN1*24*12~
+    """
+
+    segment_name: X12SegmentName = X12SegmentName.DN1
+    orthodontic_treatment_months_count: Optional[Decimal] = None
+    orthodontic_treatment_months_remaining_count: Optional[Decimal] = None
+    yes_no_condition_or_response_code: Optional[str] = Field(None, max_length=1)
+    description: Optional[str] = Field(None, min_length=1, max_length=80)
+
+
+class Dn2Segment(X12Segment):
+    """
+    Tooth Summary
+    Example:
+        DN2*12*M~
+    """
+
+    segment_name: X12SegmentName = X12SegmentName.DN2
+    tooth_number: str = Field(min_length=1, max_length=50)
+    tooth_status_code: str = Field(min_length=1, max_length=2)
+    quantity: Optional[Decimal] = None
+    date_time_period_format_qualifier: Optional[str] = Field(None, max_length=3)
+    date_time_period: Optional[str] = Field(None, max_length=35)
+    code_list_qualifier_code: Optional[str] = Field(None, max_length=3)
+
+
+class Sv3Segment(X12Segment):
+    """
+    Dental Service
+    Example:
+        SV3*AD:D2391*150.00****1~
+    """
+
+    segment_name: X12SegmentName = X12SegmentName.SV3
+    composite_medical_procedure_identifier: str = Field(
+        json_schema_extra={"is_component": True}
+    )
+    line_item_charge_amount: Decimal
+    place_of_service_code: Optional[str] = Field(None, max_length=2)
+    oral_cavity_designation: Optional[List[str]] = Field(
+        None, json_schema_extra={"is_component": True}
+    )
+    prosthesis_crown_or_inlay_code: Optional[str] = Field(None, max_length=1)
+    procedure_count: Optional[Decimal] = None
+    description: Optional[str] = Field(None, max_length=80)
+    copay_status_code: Optional[str] = Field(None, max_length=1)
+    provider_agreement_code: Optional[str] = Field(None, max_length=1)
+    yes_no_condition_or_response_code: Optional[str] = Field(None, max_length=1)
+    composite_diagnosis_code_pointer: Optional[List[str]] = Field(
+        None, json_schema_extra={"is_component": True}
+    )
+
+
+class TooSegment(X12Segment):
+    """
+    Tooth Identification
+    Example:
+        TOO*JP*12*M:O~
+    """
+
+    segment_name: X12SegmentName = X12SegmentName.TOO
+    code_list_qualifier_code: str = Field(min_length=1, max_length=3)
+    tooth_number: str = Field(min_length=1, max_length=48)
+    tooth_surface: Optional[List[str]] = Field(
+        None, json_schema_extra={"is_component": True}
+    )
+
+
 SEGMENT_LOOKUP: Dict = {}
 
 cached_attrs = [v for v in globals().values()]
