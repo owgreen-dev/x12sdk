@@ -596,7 +596,10 @@ def set_service_line_adjudication_loop(
     """
     service_line = _get_service_line(context)
 
-    if TransactionLoops.CLAIM_SERVICE_LINE_LINE_ADJUDICATION_INFORMATION:
+    if (
+        TransactionLoops.CLAIM_SERVICE_LINE_LINE_ADJUDICATION_INFORMATION
+        not in service_line
+    ):
         service_line[
             TransactionLoops.CLAIM_SERVICE_LINE_LINE_ADJUDICATION_INFORMATION
         ] = []
