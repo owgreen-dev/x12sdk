@@ -289,3 +289,54 @@ def test_shared_segment_list_fields_declare_their_item_type(models):
     """Check 7, applied to the shared segment modules."""
     offenders = _untyped_lists(models)
     assert not offenders, "\n  ".join(["bare List, no item type:"] + offenders)
+
+
+# --- a guard that can never be false ----------------------------------------
+
+
+def _always_true(test: ast.AST, source: "I.ParserSource") -> bool:
+    """
+    True when an ``if`` test cannot be false: a ``TransactionLoops`` member
+    (a non-empty string enum, so always truthy) or a truthy literal. A real
+    guard compares something, calls something, or negates something.
+    """
+    if (
+        isinstance(test, ast.Attribute)
+        and isinstance(test.value, ast.Name)
+        and test.value.id == "TransactionLoops"
+        and test.attr in source.loop_names
+    ):
+        return True
+    if isinstance(test, ast.Constant):
+        return bool(test.value)
+    return False
+
+
+def test_no_guard_is_always_true(pkg):
+    """
+    Bug class: a membership guard written without the membership test, e.g.
+    ``if TransactionLoops.X:`` where ``if TransactionLoops.X not in record:``
+    was meant. The enum member is a non-empty string, so the branch always
+    runs; when it initializes a list, every occurrence resets it and only the
+    last record survives.
+
+    Instance: the 837P and 837I parsers reset loop 2430 (line adjudication)
+    on every SVD, so a service line adjudicated by more than one payer kept
+    only the last payer's adjudication (fixed 2.3.0). The assign-versus-append
+    check above missed it because the value written is a list, not a dict.
+    """
+    source = I.parser_source(pkg)
+    if source is None:
+        pytest.skip("no parsing module")
+
+    offenders: List[str] = []
+    for func in (n for n in ast.walk(source.tree) if isinstance(n, ast.FunctionDef)):
+        for node in ast.walk(func):
+            if isinstance(node, (ast.If, ast.While, ast.IfExp)) and _always_true(
+                node.test, source
+            ):
+                offenders.append(
+                    f"{func.name}() line {node.lineno}: the guard "
+                    f"{ast.unparse(node.test)!r} is always true"
+                )
+    assert not offenders, "\n".join(offenders)

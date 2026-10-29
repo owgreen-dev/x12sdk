@@ -18,6 +18,15 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   005010X224 or 005010X224A1 read with the same model. The generator and
   accessor follow before 2.3.0.
 
+### Fixed
+- **A service line adjudicated by more than one payer kept only the last
+  adjudication** in every 837 except the new dental claim: the 837P, the 837I
+  and both 4010 implementations. The 2430 initializer was guarded by
+  `if TransactionLoops.X:`, which is always true, so each SVD reset the list.
+  A claim sent to a secondary or tertiary payer lost the earlier payers' line
+  decisions without an error. The audit suite gains a check for guards that
+  can never be false, which finds exactly these four.
+
 ## 2.2.0 — 2026-10-21
 
 ### Added
