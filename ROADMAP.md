@@ -27,20 +27,26 @@ if someone wants it, which could be you.
   one shell command. Python 3.14 in the test matrix. An `X12ModelWriter`
   context manager to mirror the reader.
 - **Committed:** the 837D dental claim ([#2](https://github.com/owgreen-dev/x12sdk/issues/2)), with generator and accessor.
-- **Committed:** denial analytics carry RARC remark codes, and the reason-code
-  category table gets a documented override API.
+- **Committed:** matched 837 and 835 pairs from one specification, a claim as
+  submitted and as adjudicated, so outcomes such as paid, denied and amount
+  can be studied together.
+- **Committed:** an MCP server as an optional extra, so AI assistants can
+  parse, validate and generate X12 directly.
+- **Committed:** a public synthetic dataset on Hugging Face, built with the
+  generators, for anyone who needs X12 data for analysis or machine learning
+  and has no public source to draw on.
+- **Committed:** the 277CA claim acknowledgment (005010X214).
 - **Target:** [#7](https://github.com/owgreen-dev/x12sdk/issues/7), ISO 3166-1 alpha-3 currency codes in CUR. This is a good first issue and is held open for a contributor first.
 - **Target:** the 835 generator emits provider-level adjustments (PLB); the
   834 generator emits disability periods and multiple employers; the 837
   generators emit coordination-of-benefits loops.
-- **Target:** the 277CA claim acknowledgment (005010X214).
-- **Possible:** matched 837 and 835 pairs from one specification, a claim as
-  submitted and as adjudicated. Property-based tests as an optional audit
-  leg.
+- **Possible:** property-based tests as an optional audit leg.
 
 ## Q1 2027 — 2.5, 2.6, 2.7
 
 - **Committed:** the 278 health care services review ([#4](https://github.com/owgreen-dev/x12sdk/issues/4)).
+- **Committed:** denial analytics carry RARC remark codes, and the reason-code
+  category table gets a documented override API.
 - **Committed:** the 820 premium payment ([#3](https://github.com/owgreen-dev/x12sdk/issues/3)).
 - **Committed:** deprecation warnings for everything 3.0.0 changes, with the
   migration table published a release early.
