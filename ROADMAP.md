@@ -36,6 +36,12 @@ if someone wants it, which could be you.
   generators, for anyone who needs X12 data for analysis or machine learning
   and has no public source to draw on.
 - **Committed:** the 277CA claim acknowledgment (005010X214).
+- **Committed:** claim pairs can follow published, administrative denial
+  rules instead of random outcomes: a claim filed too late, missing required
+  information, lacking a required authorization, or for a service the plan
+  does not cover. Each rule fires on something visible in the claim and is
+  documented alongside the data. Rules about the care itself or a
+  provider's billing patterns are out of scope.
 - **Target:** [#7](https://github.com/owgreen-dev/x12sdk/issues/7), ISO 3166-1 alpha-3 currency codes in CUR. This is a good first issue and is held open for a contributor first.
 - **Target:** the 835 generator emits provider-level adjustments (PLB); the
   834 generator emits disability periods and multiple employers; the 837

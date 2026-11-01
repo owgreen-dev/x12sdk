@@ -67,9 +67,11 @@ _CLAIM_TYPES: Dict[str, _ClaimType] = {
 #: CLP02 values used here: processed as primary, and denied.
 _PAID, _DENIED = "1", "4"
 
-#: Reason codes for a claim denied outright (bare CARC codes; no descriptions
-#: are carried, see the denials module).
-_DENIAL_REASONS = ("16", "27", "29", "50", "197")
+#: Reason codes for a claim denied outright: administrative reasons only
+#: (missing information, coverage ended, filed late, not covered, no
+#: authorization), never judgments about the care itself. Bare CARC codes; no
+#: descriptions are carried, see the denials module.
+_DENIAL_REASONS = ("16", "27", "29", "96", "197")
 
 
 def _invent_claims(count: int, values: ValueFactory, dental: bool) -> List[ClaimSpec]:
