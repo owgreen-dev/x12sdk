@@ -267,3 +267,19 @@ def test_duplicate_patient_control_numbers_are_rejected():
     ]
     with pytest.raises(ValueError, match="must be unique"):
         generate_claim_pair(seed=0, claims=spec)
+
+
+def test_invented_denials_are_administrative_only():
+    """
+    Outright denials are for paperwork and coverage reasons, never a judgment
+    about the care (medical necessity, CARC 50) or a billing pattern.
+    """
+    pair = generate_claim_pair(seed=3, claims=200, denial_rate=1.0)
+    reasons = {
+        cas.adjustment_reason_code_1
+        for _, paid in _joined(pair)
+        for svc in paid.service_lines
+        for cas in svc.cas_segment or []
+    }
+    assert reasons
+    assert reasons <= {"16", "27", "29", "96", "197"}
