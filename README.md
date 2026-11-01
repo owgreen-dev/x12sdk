@@ -491,6 +491,41 @@ submission = generate_837d(seed=1, claims=spec)   # ... SV3*AD:D2392*340.00****1
 
 A tooth on an 837P or 837I is refused rather than dropped.
 
+### Matched claim and remittance pairs
+
+A claim and the remittance that answers it can be generated together. Every
+claim on the 837 is answered by exactly one claim payment on the 835, linked
+as real files are, by CLM01 = CLP01, with the same charge, the same procedure
+on each line, and the same patient, payer and payee. Outcomes are mixed by
+default: some claims paid in full, most reduced by a contractual write-off,
+some leaving a share to the patient, and a share denied outright
+(`denial_rate`, 0.15 by default). Real pairs are PHI, so this is the only way
+to have claims and their outcomes side by side in the open.
+
+```python
+from x12sdk.generate import generate_claim_pair
+
+claim, remittance = generate_claim_pair(seed=7, claims=25, claim_type="837d")
+```
+
+`claim_type` is `"837p"`, `"837i"` or `"837d"`. To describe the outcome
+yourself, give `ClaimSpec`s: the lines and charges are what was submitted, the
+adjustments and `status` what the payer decided. The decision reaches the 835
+and is kept off the 837:
+
+```python
+from x12sdk.generate import ClaimSpec, ServiceLineSpec, denial, generate_claim_pair
+
+spec = [
+    ClaimSpec(charge="120.00", status="4",   # denied
+              lines=[ServiceLineSpec(charge="120.00", procedure="93000",
+                                     adjustments=[denial("CO", "29", "120.00")])]),
+]
+claim, remittance = generate_claim_pair(seed=1, claims=spec)
+```
+
+Read both back with `claims()` and join on `patient_control_number`.
+
 ## Migrating from `linuxforhealth-x12`
 
 | before | after |

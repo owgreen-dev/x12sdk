@@ -10,7 +10,7 @@ uses, then the footer is attached.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Dict, List, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from ..support import count_segments
 from ..v5010.segments import (
@@ -70,11 +70,13 @@ def _cas_segments(adjustments: Sequence[AdjustmentSpec], segment_class):
     ]
 
 
-def _service_line(line: ServiceLineSpec, values: ValueFactory) -> Loop2110:
+def _service_line(
+    line: ServiceLineSpec, values: ValueFactory, qualifier: str = "HC"
+) -> Loop2110:
     procedure = line.procedure or values.procedure()
     return Loop2110(
         svc_segment=SvcSegment(
-            composite_medical_procedure_identifier_1=f"HC:{procedure}",
+            composite_medical_procedure_identifier_1=f"{qualifier}:{procedure}",
             line_item_charge_amount=line.charge,
             line_item_provider_payment_amount=line.paid,
             units_of_service_paid_count=Decimal(line.units),
@@ -83,8 +85,16 @@ def _service_line(line: ServiceLineSpec, values: ValueFactory) -> Loop2110:
     )
 
 
-def _claim(claim: ClaimSpec, index: int, values: ValueFactory) -> Loop2100:
-    last, first = values.person_name()
+def _claim(
+    claim: ClaimSpec,
+    index: int,
+    values: ValueFactory,
+    qualifier: str = "HC",
+    patient: Optional[Tuple[str, str, str]] = None,
+) -> Loop2100:
+    # The invented member id is drawn where it always was, after CLP07, so a
+    # seed keeps producing the same bytes.
+    last, first = values.person_name() if patient is None else patient[:2]
     return Loop2100(
         clp_segment=ClpSegment(
             patient_control_number=claim.patient_control_number
@@ -103,10 +113,13 @@ def _claim(claim: ClaimSpec, index: int, values: ValueFactory) -> Loop2100:
                 name_last_or_organization_name=last,
                 name_first=first,
                 identification_code_qualifier="MI",
-                identification_code=values.member_id(),
+                identification_code=values.member_id()
+                if patient is None
+                else patient[2],
             )
         ],
-        loop_2110=[_service_line(line, values) for line in claim.lines] or None,
+        loop_2110=[_service_line(line, values, qualifier) for line in claim.lines]
+        or None,
     )
 
 
@@ -139,17 +152,33 @@ def build_835(
     *,
     seed: int = 0,
     control_number: str = "0001",
+    procedure_qualifier: str = "HC",
+    patients: Optional[Sequence[Tuple[str, str, str]]] = None,
+    payee_npi: Optional[str] = None,
 ) -> HealthCareClaimPayment:
     """
     Builds a validated 835 transaction model from a specification.
 
+    The last three parameters let the remittance answer a particular claim
+    submission, which is how :func:`generate_claim_pair` keeps the two in step.
+
     :param spec: What the remittance should contain.
     :param seed: Seeds the values that the specification leaves unstated.
     :param control_number: ST02/SE02. At least 4 characters, per the standard.
+    :param procedure_qualifier: SVC01-1. ``HC`` for HCPCS/CPT, ``AD`` for
+        dental (CDT) codes.
+    :param patients: ``(last, first, member id)`` for each claim, in order,
+        for the NM1*QC patient name. Invented when not given.
+    :param payee_npi: The payee's NPI. Invented when not given.
     :return: A validated ``HealthCareClaimPayment``.
     """
+    if patients is not None and len(patients) != len(spec.claims):
+        raise ValueError(
+            f"{len(patients)} patients given for {len(spec.claims)} claims; "
+            "give one per claim"
+        )
     values = ValueFactory(seed)
-    payee_npi = values.npi()
+    payee_npi = payee_npi or values.npi()
 
     structure: Dict = {
         "header": Header(
@@ -194,7 +223,13 @@ def build_835(
             Loop2000(
                 lx_segment={"assigned_number": "1"},
                 loop_2100=[
-                    _claim(claim, index, values)
+                    _claim(
+                        claim,
+                        index,
+                        values,
+                        procedure_qualifier,
+                        patients[index - 1] if patients else None,
+                    )
                     for index, claim in enumerate(spec.claims, start=1)
                 ],
             )
