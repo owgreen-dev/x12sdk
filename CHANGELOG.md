@@ -26,6 +26,17 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   refuse a tooth rather than dropping it.
 - **`claims()` and `subscribers()` on the 837D**, the same flattened access
   the 837P and 837I have.
+- **`generate_claim_pair`: a claim submission and the remittance that
+  answers it**, from one specification, for the 837P, 837I or 837D. Every
+  claim is answered by exactly one claim payment, linked by CLM01 = CLP01,
+  with the same charges, line procedures, patient, payer and payee. Invented
+  outcomes mix paid in full, contractual write-offs, patient cost share and
+  outright denials (`denial_rate`). A `ClaimSpec`'s adjustments and status
+  describe the payer's decision: they reach the 835 and are kept off the
+  837. `build_835` gains `procedure_qualifier`, `patients` and `payee_npi`
+  so a remittance can answer a particular submission; its output for
+  existing seeds is unchanged, and a new test pins the README sample to what
+  the library prints.
 
 ### Fixed
 - **A service line adjudicated by more than one payer kept only the last

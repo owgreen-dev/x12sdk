@@ -54,6 +54,16 @@ often handles only the first. Generated files contain both by default; set
 ``dependent_rate`` to choose the mix, or give a ``SubmissionSpec`` to place
 each claim yourself.
 
+A claim and the remittance that answers it can be generated together, linked
+by the patient control number, so a claim's outcome (paid, reduced, denied)
+sits next to what was billed:
+
+```python
+from x12sdk.generate import generate_claim_pair
+
+claim, remittance = generate_claim_pair(seed=7, claims=25, claim_type="837d")
+```
+
 Output is deterministic: the same seed produces byte-identical bytes.
 """
 
@@ -68,6 +78,7 @@ from ._837i import build_837i
 from ._837p import build_837p, claim_specs_to_patients, random_patients
 from ._claim_status import build_276, build_277, random_status_patients
 from ._eligibility import build_270, build_271, random_members
+from ._pairs import ClaimPair, adjudicate, build_claim_pair, claim_pair_specs
 from ._spec import (
     BENEFIT_STATUS_CODES,
     DISABILITY_TYPE_CODES,
@@ -553,10 +564,74 @@ def generate_837d(
     )
 
 
+def generate_claim_pair(
+    *,
+    seed: int = 0,
+    claims: Union[int, Sequence[ClaimSpec]] = 5,
+    claim_type: str = "837p",
+    denial_rate: float = 0.15,
+    dependent_rate: float = 0.3,
+    billing_provider_name: Optional[str] = None,
+    payer_name: Optional[str] = None,
+    provider_id: str = "SYNTHETICPROV",
+    payer_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> ClaimPair:
+    """
+    Generates a claim submission and the remittance that answers it.
+
+    Every claim on the 837 is paid, reduced or denied by exactly one claim
+    payment on the 835, linked by CLM01 = CLP01, with the same charge, the
+    same procedure on each line, and the same patient, payer and payee.
+
+    :param seed: Reproduces the same pair when unchanged.
+    :param claims: A number of claims to invent, outcomes included, or
+        ``ClaimSpec``s to follow: a spec's lines and charges are what was
+        submitted, its adjustments and ``status`` what the payer decided.
+    :param claim_type: ``"837p"``, ``"837i"`` or ``"837d"``.
+    :param denial_rate: The share of invented claims denied outright. The
+        rest are paid, most less a contractual write-off, some also leaving a
+        share to the patient. Ignored when the claims are specified.
+    :param dependent_rate: The share of patients who are a dependent of the
+        subscriber, as for :func:`generate_837p`.
+    :param billing_provider_name: The provider billing, and so the payee.
+    :param payer_name: The payer billed, and so the payer paying.
+    :param provider_id: The provider's interchange id: the 837's sender and
+        the 835's receiver.
+    :param payer_id: The payer's interchange id, the other way round.
+    :param control_number: ST02 / SE02 on both, at least 4 characters.
+    :return: ``ClaimPair(claim, remittance)``, two complete interchanges.
+    """
+    if isinstance(claims, int):
+        if claims < 1:
+            raise ValueError("claims must be at least 1")
+        claims = claim_pair_specs(
+            claims, ValueFactory(seed), claim_type=claim_type, denial_rate=denial_rate
+        )
+    submission, remittance = build_claim_pair(
+        list(claims),
+        claim_type=claim_type,
+        seed=seed,
+        dependent_rate=dependent_rate,
+        billing_provider_name=billing_provider_name,
+        payer_name=payer_name,
+        control_number=control_number,
+    )
+    return ClaimPair(
+        claim=write_transactions(
+            [submission], sender_id=provider_id, receiver_id=payer_id, created=_EPOCH
+        ),
+        remittance=write_transactions(
+            [remittance], sender_id=payer_id, receiver_id=provider_id, created=_EPOCH
+        ),
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "BENEFIT_STATUS_CODES",
     "BenefitSpec",
+    "ClaimPair",
     "ClaimSpec",
     "ClaimStatusSpec",
     "CoverageSpec",
@@ -579,6 +654,7 @@ __all__ = [
     "TOOTH_SURFACES",
     "TrackedClaimSpec",
     "ValueFactory",
+    "adjudicate",
     "build_270",
     "build_271",
     "build_276",
@@ -588,6 +664,8 @@ __all__ = [
     "build_837d",
     "build_837i",
     "build_837p",
+    "build_claim_pair",
+    "claim_pair_specs",
     "claim_specs_to_patients",
     "denial",
     "generate_270",
@@ -599,6 +677,7 @@ __all__ = [
     "generate_837d",
     "generate_837i",
     "generate_837p",
+    "generate_claim_pair",
     "patient_responsibility",
     "provider_adjustment",
     "random_claims",
