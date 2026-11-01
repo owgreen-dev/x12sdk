@@ -24,6 +24,7 @@ from . import (
     generate_277,
     generate_834,
     generate_835,
+    generate_837d,
     generate_837i,
     generate_837p,
 )
@@ -71,6 +72,14 @@ _SETS: Dict[str, _TransactionSet] = {
         ("billing_provider_name", "payer_name", "submitter_name"),
         True,
         "institutional claim",
+    ),
+    "837d": _TransactionSet(
+        generate_837d,
+        "claims",
+        "claims to invent",
+        ("billing_provider_name", "payer_name", "submitter_name"),
+        True,
+        "dental claim",
     ),
     "834": _TransactionSet(
         generate_834,

@@ -116,3 +116,17 @@ def test_an_unknown_tooth_surface_is_rejected():
     with pytest.raises(ValueError):
         with X12ModelReader(text) as reader:
             list(reader.models())
+
+
+def test_claims_reads_both_branches_of_a_dental_file():
+    """The 837D gets the same flattened ``claims()`` as the 837P and 837I."""
+    subscriber = list(_read("subscriber-restoration.837").claims())
+    dependent = list(_read("dependent-orthodontic.837").claims())
+
+    assert [c.is_dependent for c in subscriber] == [False]
+    assert subscriber[0].patient_control_number == "PCN000001"
+    assert subscriber[0].charge == Decimal("185.00")
+    assert len(subscriber[0].service_lines) == 2
+
+    assert [c.is_dependent for c in dependent] == [True]
+    assert dependent[0].patient_name != dependent[0].subscriber_name

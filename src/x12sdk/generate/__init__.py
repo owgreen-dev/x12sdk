@@ -40,6 +40,14 @@ from x12sdk.generate import generate_837p
 submission = generate_837p(seed=7, claims=25)
 ```
 
+Dental claims too, with a tooth and its surfaces on the lines that need them:
+
+```python
+from x12sdk.generate import generate_837d
+
+submission = generate_837d(seed=7, claims=25)
+```
+
 An 837 puts a claim under the subscriber when the patient is the subscriber
 and under a dependent when they are not, and code that walks the hierarchy
 often handles only the first. Generated files contain both by default; set
@@ -55,6 +63,7 @@ from typing import Optional, Sequence, Union
 from ..io import write_transactions
 from ._834 import build_834, random_enrollees
 from ._835 import build_835, random_claims, random_provider_adjustments
+from ._837d import build_837d, random_dental_lines, random_dental_patients
 from ._837i import build_837i
 from ._837p import build_837p, claim_specs_to_patients, random_patients
 from ._claim_status import build_276, build_277, random_status_patients
@@ -64,6 +73,8 @@ from ._spec import (
     DISABILITY_TYPE_CODES,
     GROUP_CODES,
     PATIENT_RELATIONSHIP_CODES,
+    TOOTH_NUMBERS,
+    TOOTH_SURFACES,
     AdjustmentSpec,
     BenefitSpec,
     ClaimSpec,
@@ -490,6 +501,58 @@ def generate_837i(
     )
 
 
+def generate_837d(
+    *,
+    seed: int = 0,
+    claims: Union[int, Sequence[ClaimSpec], SubmissionSpec] = 5,
+    dependent_rate: float = 0.3,
+    billing_provider_name: Optional[str] = None,
+    payer_name: Optional[str] = None,
+    submitter_name: Optional[str] = None,
+    sender_id: str = "SYNTHETICPROV",
+    receiver_id: str = "SYNTHETICPAYER",
+    control_number: str = "0001",
+) -> str:
+    """
+    Generates a complete 837D dental claim submission.
+
+    Takes the same specification as :func:`generate_837p`. A
+    ``ServiceLineSpec``'s procedure is a CDT code, billed under the ``AD``
+    qualifier, and its ``tooth`` and ``surfaces`` become the line's TOO
+    segment. Invented lines mix procedures done to a tooth (with surfaces for a
+    filling) and procedures that are not (an exam, a cleaning), and both
+    patient branches appear by default.
+
+    :return: The interchange, ISA through IEA.
+    """
+    if isinstance(claims, SubmissionSpec):
+        spec = claims
+    else:
+        values = ValueFactory(seed)
+        if isinstance(claims, int):
+            if claims < 1:
+                raise ValueError("claims must be at least 1")
+            patients = random_dental_patients(
+                claims, values, dependent_rate=dependent_rate
+            )
+        else:
+            patients = claim_specs_to_patients(
+                list(claims), values, dependent_rate=dependent_rate
+            )
+        spec = SubmissionSpec(
+            patients=patients,
+            billing_provider_name=billing_provider_name,
+            payer_name=payer_name,
+            submitter_name=submitter_name,
+        )
+    return write_transactions(
+        [build_837d(spec, seed=seed, control_number=control_number)],
+        sender_id=sender_id,
+        receiver_id=receiver_id,
+        created=_EPOCH,
+    )
+
+
 __all__ = [
     "AdjustmentSpec",
     "BENEFIT_STATUS_CODES",
@@ -512,6 +575,8 @@ __all__ = [
     "ServiceLineSpec",
     "StatusPatientSpec",
     "SubmissionSpec",
+    "TOOTH_NUMBERS",
+    "TOOTH_SURFACES",
     "TrackedClaimSpec",
     "ValueFactory",
     "build_270",
@@ -520,6 +585,7 @@ __all__ = [
     "build_277",
     "build_834",
     "build_835",
+    "build_837d",
     "build_837i",
     "build_837p",
     "claim_specs_to_patients",
@@ -530,11 +596,14 @@ __all__ = [
     "generate_277",
     "generate_834",
     "generate_835",
+    "generate_837d",
     "generate_837i",
     "generate_837p",
     "patient_responsibility",
     "provider_adjustment",
     "random_claims",
+    "random_dental_lines",
+    "random_dental_patients",
     "random_enrollees",
     "random_members",
     "random_patients",

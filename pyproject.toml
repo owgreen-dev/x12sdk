@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "x12sdk"
-description = "Typed Pydantic models and a streaming SDK/CLI for HIPAA ASC X12 5010 health care transactions (837P, 837I, 835, 834, 270, 271, 276, 277)."
+description = "Typed Pydantic models and a streaming SDK/CLI for HIPAA ASC X12 5010 health care transactions (837P, 837I, 837D, 835, 834, 270, 271, 276, 277)."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
