@@ -35,18 +35,54 @@ class AdjustmentSpec:
             object.__setattr__(self, "amount", Decimal(str(self.amount)))
 
 
+#: Tooth numbers in the Universal National Tooth Designation System (TOO01
+#: qualifier JP): 1-32 for permanent teeth, A-T for primary teeth.
+TOOTH_NUMBERS = tuple(str(n) for n in range(1, 33)) + tuple("ABCDEFGHIJKLMNOPQRST")
+
+#: TOO03 tooth surfaces: buccal, distal, facial, incisal, lingual, mesial,
+#: occlusal.
+TOOTH_SURFACES = ("B", "D", "F", "I", "L", "M", "O")
+
+
 @dataclass(frozen=True)
 class ServiceLineSpec:
-    """One service line on a claim."""
+    """
+    One service line on a claim.
+
+    ``tooth`` and ``surfaces`` describe a dental line (the 837D's TOO segment)
+    and are refused on a professional or institutional claim, which has nowhere
+    to put them. An 835 paying a dental claim does not repeat them.
+    """
 
     charge: Decimal
     procedure: Optional[str] = None
     adjustments: Sequence[AdjustmentSpec] = field(default_factory=tuple)
     units: int = 1
+    tooth: Optional[str] = None
+    surfaces: Sequence[str] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if not isinstance(self.charge, Decimal):
             object.__setattr__(self, "charge", Decimal(str(self.charge)))
+        if self.tooth is not None and self.tooth not in TOOTH_NUMBERS:
+            raise ValueError(
+                f"tooth must be 1-32 (permanent) or A-T (primary), got {self.tooth!r}"
+            )
+        if self.surfaces:
+            if self.tooth is None:
+                raise ValueError("surfaces belong to a tooth; give the tooth too")
+            unknown = [s for s in self.surfaces if s not in TOOTH_SURFACES]
+            if unknown:
+                raise ValueError(
+                    f"surfaces must be among {TOOTH_SURFACES}, got {unknown!r}"
+                )
+            if len(set(self.surfaces)) != len(self.surfaces):
+                raise ValueError(f"a surface is named twice: {list(self.surfaces)!r}")
+            if len(self.surfaces) > 5:
+                raise ValueError(
+                    f"a tooth carries at most five surfaces (TOO03), got "
+                    f"{len(self.surfaces)}"
+                )
 
     @property
     def adjustment_total(self) -> Decimal:
@@ -225,6 +261,19 @@ class SubmissionSpec:
             (claim.charge for patient in self.patients for claim in patient.claims),
             Decimal("0.00"),
         )
+
+    def refuse_teeth(self, claim_type: str) -> None:
+        """
+        Raises if any line names a tooth, for the claim types that cannot carry
+        one, rather than dropping it from the output without a word.
+        """
+        for patient in self.patients:
+            for claim in patient.claims:
+                if any(line.tooth for line in claim.lines):
+                    raise ValueError(
+                        f"an {claim_type} has nowhere to put a tooth number; "
+                        "generate an 837D for dental lines"
+                    )
 
 
 # --- eligibility (270 / 271) ------------------------------------------------
@@ -504,6 +553,8 @@ __all__ = [
     "ServiceLineSpec",
     "StatusPatientSpec",
     "SubmissionSpec",
+    "TOOTH_NUMBERS",
+    "TOOTH_SURFACES",
     "TrackedClaimSpec",
     "denial",
     "patient_responsibility",

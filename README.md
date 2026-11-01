@@ -49,7 +49,7 @@ IEA*1*000000001~
 The same seed reproduces the same bytes. Every file parses through the
 library's own validators, round-trips byte for byte, and carries both the
 subscriber and the dependent branch of the hierarchy, the place real code
-loses claims. All eight supported transaction sets generate; scenarios can be
+loses claims. All nine supported transaction sets generate; scenarios can be
 described exactly, from a denial pattern to a multi-employer enrollment. See
 [Generating synthetic files](#generating-synthetic-files).
 
@@ -67,6 +67,7 @@ Supported transaction sets:
 |---|---|---|---|---|---|
 | 837P | 005010X222A2 | Professional claim | yes | `generate_837p` | `claims()`, `subscribers()` |
 | 837I | 005010X223A3 | Institutional claim | yes | `generate_837i` | `claims()`, `subscribers()` |
+| 837D | 005010X224A2 | Dental claim | yes | `generate_837d` | `claims()`, `subscribers()` |
 | 835 | 005010X221A1 | Claim payment / remittance advice | yes | `generate_835` | `claims()` |
 | 834 | 005010X220A1 | Benefit enrollment and maintenance | yes | `generate_834` | |
 | 270 / 271 | 005010X279A1 | Eligibility inquiry / response | yes | `generate_270` / `generate_271` | `members()` |
@@ -206,6 +207,7 @@ positional arguments:
     835       claim payment / remittance advice
     837p      professional claim
     837i      institutional claim
+    837d      dental claim
     834       benefit enrollment and maintenance
     270       eligibility inquiry
     271       eligibility response
@@ -216,6 +218,7 @@ positional arguments:
 ```shell
 x12sdk-generate 835 --seed 7 --claims 2                     # to stdout
 x12sdk-generate 837p --seed 7 --claims 25 --dependent-rate 0.5 --out claims.837
+x12sdk-generate 837d --claims 10 --payer-name "EXAMPLE DENTAL PLAN"
 x12sdk-generate 834 --enrollees 10 --sponsor-name "EXAMPLE EMPLOYER"
 x12sdk-generate 270 --members 3 -o inquiry.270 && x12sdk-generate 271 --members 3 -o response.271
 x12sdk-generate 835 --claims 10 --provider-adjustments 2   # two PLB adjustments; 0 for none
@@ -454,14 +457,39 @@ from x12sdk.generate import generate_834
 roster = generate_834(seed=3, enrollees=20)
 ```
 
-All eight supported transaction sets can be generated. The institutional
-claim takes the same specification as the professional one:
+All nine supported transaction sets can be generated. The institutional
+and dental claims take the same specification as the professional one:
 
 ```python
 from x12sdk.generate import generate_837i
 
 submission = generate_837i(seed=7, claims=25)
 ```
+
+On a dental claim a line's procedure is a CDT code, and a line done to a tooth
+names it, with the surfaces treated for a filling. Invented files mix lines
+with a tooth and lines without one (an exam, a cleaning):
+
+```python
+from x12sdk.generate import (
+    ClaimSpec, PatientSpec, ServiceLineSpec, SubmissionSpec, generate_837d
+)
+
+spec = SubmissionSpec(
+    patients=[
+        PatientSpec(
+            claims=[ClaimSpec(charge="395.00", lines=[
+                ServiceLineSpec(charge="55.00", procedure="D0120"),
+                ServiceLineSpec(charge="340.00", procedure="D2392",
+                                tooth="19", surfaces=("M", "O")),
+            ])]
+        )
+    ]
+)
+submission = generate_837d(seed=1, claims=spec)   # ... SV3*AD:D2392*340.00****1~ TOO*JP*19*M:O~
+```
+
+A tooth on an 837P or 837I is refused rather than dropped.
 
 ## Migrating from `linuxforhealth-x12`
 

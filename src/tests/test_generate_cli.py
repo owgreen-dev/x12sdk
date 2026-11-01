@@ -15,6 +15,7 @@ from x12sdk.generate import (
     generate_277,
     generate_834,
     generate_835,
+    generate_837d,
     generate_837i,
     generate_837p,
 )
@@ -33,6 +34,7 @@ def _read(x12: str):
         ("835", generate_835, "claims"),
         ("837p", generate_837p, "claims"),
         ("837i", generate_837i, "claims"),
+        ("837d", generate_837d, "claims"),
         ("834", generate_834, "enrollees"),
         ("270", generate_270, "members"),
         ("271", generate_271, "members"),

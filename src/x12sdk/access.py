@@ -40,7 +40,7 @@ def _name(nm1_segment: Any) -> Tuple[Optional[str], Optional[str]]:
     )
 
 
-# --- 837 professional and institutional ------------------------------------
+# --- 837 professional, institutional and dental ----------------------------
 
 
 @dataclass(frozen=True)
@@ -73,7 +73,7 @@ class SubmittedClaim:
 
     @property
     def service_lines(self) -> List[Any]:
-        """The 2400 loops, one per service line."""
+        """The 2400 loops, one per service line (SV1, SV2 or SV3 by claim type)."""
         return list(self.claim.loop_2400 or [])
 
     @property
@@ -128,8 +128,8 @@ class ClaimSubmissionAccess:
     """
     ``claims()`` and ``subscribers()`` for the 837 transaction models.
 
-    The professional and institutional implementations have identical loop
-    names down every level this walks, so one traversal serves both.
+    The professional, institutional and dental implementations have identical
+    loop names down every level this walks, so one traversal serves all three.
     """
 
     def subscribers(self) -> Iterator[Subscriber]:

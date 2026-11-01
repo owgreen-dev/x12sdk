@@ -211,6 +211,7 @@ def build_837i(
     :param seed: Seeds the values that the specification leaves unstated.
     :param control_number: ST02/SE02. At least 4 characters, per the standard.
     """
+    spec.refuse_teeth("837I")
     values = ValueFactory(seed)
     provider_name = spec.billing_provider_name or values.provider_name()
     submitter_name = spec.submitter_name or provider_name

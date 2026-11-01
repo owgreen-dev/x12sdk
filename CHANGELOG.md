@@ -15,8 +15,17 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   TOO, DN1 and DN2. Three synthetic samples join the round-trip sweep: a
   subscriber's filling, a child's orthodontic claim, and a tertiary claim
   whose crown was adjudicated by two earlier payers. Files declaring
-  005010X224 or 005010X224A1 read with the same model. The generator and
-  accessor follow before 2.3.0.
+  005010X224 or 005010X224A1 read with the same model.
+- **`generate_837d` and `x12sdk-generate 837d`**, completing #2. Lines bill
+  CDT codes under the `AD` qualifier; a line done to a tooth carries a TOO
+  segment, with surfaces for a filling, and invented files mix those with
+  lines that have no tooth (an exam, a cleaning). Both patient branches
+  appear by default, and one payer is named throughout the file.
+  `ServiceLineSpec` gains `tooth` and `surfaces`, validated against the
+  Universal tooth numbers and the seven surface codes; the 837P and 837I
+  refuse a tooth rather than dropping it.
+- **`claims()` and `subscribers()` on the 837D**, the same flattened access
+  the 837P and 837I have.
 
 ### Fixed
 - **A service line adjudicated by more than one payer kept only the last

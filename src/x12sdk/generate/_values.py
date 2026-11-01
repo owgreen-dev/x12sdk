@@ -64,6 +64,12 @@ _PROVIDER_NAMES: Sequence[str] = (
     "DEMO HEALTH CENTER",
     "PLACEHOLDER ASSOCIATES",
 )
+_DENTAL_PROVIDER_NAMES: Sequence[str] = (
+    "EXAMPLE DENTAL GROUP",
+    "SAMPLE FAMILY DENTISTRY",
+    "TEST DENTAL ASSOCIATES",
+    "DEMO ORAL HEALTH CENTER",
+)
 _EMPLOYER_NAMES: Sequence[str] = (
     "EXAMPLE EMPLOYER",
     "SAMPLE MANUFACTURING INC",
@@ -93,6 +99,33 @@ _PROCEDURES: Sequence[str] = (
     "71046",
     "36415",
 )
+
+#: Common dental procedure codes, for the same reason: bare codes, no
+#: descriptions. Each says what else the line needs to read plausibly: nothing
+#: (an exam is not done to a tooth), a tooth, or a tooth and a number of its
+#: surfaces, and which teeth suit it.
+_POSTERIOR_TEETH: Sequence[str] = tuple(
+    str(n) for n in (*range(1, 6), *range(12, 22), *range(28, 33))
+)
+_ANTERIOR_TEETH: Sequence[str] = tuple(str(n) for n in (*range(6, 12), *range(22, 28)))
+_MOLARS: Sequence[str] = tuple(
+    str(n) for n in (1, 2, 3, 14, 15, 16, 17, 18, 19, 30, 31, 32)
+)
+_ALL_TEETH: Sequence[str] = tuple(str(n) for n in range(1, 33))
+_DENTAL_PROCEDURES: Sequence[tuple] = (
+    # (code, teeth it applies to or None, surfaces touched, surfaces to choose
+    # from, fee range in dollars)
+    ("D0120", None, 0, "", (40, 90)),
+    ("D0274", None, 0, "", (50, 110)),
+    ("D1110", None, 0, "", (80, 160)),
+    ("D2391", _POSTERIOR_TEETH, 1, "MODBL", (120, 250)),
+    ("D2392", _POSTERIOR_TEETH, 2, "MODBL", (160, 320)),
+    ("D2330", _ANTERIOR_TEETH, 1, "MDFLI", (110, 230)),
+    ("D2740", _ALL_TEETH, 0, "", (900, 1700)),
+    ("D3330", _MOLARS, 0, "", (900, 1600)),
+    ("D7140", _ALL_TEETH, 0, "", (120, 300)),
+)
+_DENTAL_FEES = {code: fees for code, *_, fees in _DENTAL_PROCEDURES}
 
 #: Common ICD-10-CM diagnosis codes, for the same reason as the procedures
 #: above: so a generated file reads plausibly. ICD-10-CM is published by CMS
@@ -171,6 +204,9 @@ class ValueFactory:
     def provider_name(self) -> str:
         return self.rng.choice(_PROVIDER_NAMES)
 
+    def dental_provider_name(self) -> str:
+        return self.rng.choice(_DENTAL_PROVIDER_NAMES)
+
     def employer_name(self) -> str:
         return self.rng.choice(_EMPLOYER_NAMES)
 
@@ -194,6 +230,26 @@ class ValueFactory:
 
     def procedure(self) -> str:
         return self.rng.choice(_PROCEDURES)
+
+    def dental_procedure(self) -> tuple:
+        """
+        Returns ``(code, tooth, surfaces)`` for a dental service line.
+
+        ``tooth`` is ``None`` for a procedure not done to one tooth (an exam, a
+        cleaning), and ``surfaces`` is empty unless the procedure is a filling,
+        whose code says how many surfaces it covers.
+        """
+        code, teeth, count, choices, _ = self.rng.choice(_DENTAL_PROCEDURES)
+        if teeth is None:
+            return code, None, ()
+        tooth = self.rng.choice(teeth)
+        surfaces = tuple(sorted(self.rng.sample(choices, count))) if count else ()
+        return code, tooth, surfaces
+
+    def dental_fee(self, code: str) -> Decimal:
+        """A fee in the usual range for a code from :meth:`dental_procedure`."""
+        low, high = _DENTAL_FEES.get(code, (40, 1500))
+        return self.amount(low, high)
 
     def diagnosis(self) -> str:
         """An ICD-10-CM code with the decimal point removed, as X12 carries it."""
