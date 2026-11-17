@@ -48,6 +48,12 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   cannot read files off the machine. A bad argument returns its explanation
   to the assistant. Built on the MCP Python SDK 2.x.
 
+- **`scripts/build_dataset.py`**, which builds the public synthetic dataset
+  of claims and remittances: X12 file pairs for the 837P, 837I and 837D with
+  their 835s, and `claims` and `service_lines` tables read back out of those
+  files with the library's own reader, plus a dataset card. The same
+  arguments rebuild the same bytes. Outcomes are random, and the card says so.
+
 ### Fixed
 - **A service line adjudicated by more than one payer kept only the last
   adjudication** in every 837 except the new dental claim: the 837P, the 837I
