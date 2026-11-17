@@ -38,6 +38,16 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   existing seeds is unchanged, and a new test pins the README sample to what
   the library prints.
 
+- **`x12sdk-mcp`, an MCP server for AI assistants**, behind the optional
+  `mcp` extra (`pip install "x12sdk[mcp]"`). Five read-only tools:
+  `validate_x12` (where and why a file fails, without echoing its content),
+  `parse_x12`, `list_claims` (flat rows from an 837, 835, 276 or 277),
+  `generate_x12` (any supported set, the same bytes as the library) and
+  `generate_claim_pair`. The server works only on the text it is given: the
+  reader also accepts file paths, and the server refuses them so an assistant
+  cannot read files off the machine. A bad argument returns its explanation
+  to the assistant. Built on the MCP Python SDK 2.x.
+
 ### Fixed
 - **A service line adjudicated by more than one payer kept only the last
   adjudication** in every 837 except the new dental claim: the 837P, the 837I
