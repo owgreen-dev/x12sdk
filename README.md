@@ -53,6 +53,12 @@ loses claims. All nine supported transaction sets generate; scenarios can be
 described exactly, from a denial pattern to a multi-employer enrollment. See
 [Generating synthetic files](#generating-synthetic-files).
 
+Ready-made data: [**x12sdk synthetic claims and remittances**](https://huggingface.co/datasets/owgreen-dev/x12sdk)
+on Hugging Face, 30,000 professional, institutional and dental claims as X12
+with the remittances that answer them, plus flat tables. And for AI
+assistants, an [MCP server](#ai-assistants-mcp) that parses, validates and
+generates X12 through the library.
+
 ![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)
@@ -525,6 +531,10 @@ claim, remittance = generate_claim_pair(seed=1, claims=spec)
 ```
 
 Read both back with `claims()` and join on `patient_control_number`.
+
+A prebuilt set of pairs, with the claims and service lines as tables, is
+published as the [x12sdk synthetic claims and remittances](https://huggingface.co/datasets/owgreen-dev/x12sdk)
+dataset; `scripts/build_dataset.py` rebuilds it byte for byte.
 
 ## AI assistants (MCP)
 

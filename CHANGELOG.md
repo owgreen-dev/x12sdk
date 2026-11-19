@@ -4,7 +4,7 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
-## Unreleased
+## 2.3.0 — 2026-11-20
 
 ### Added
 - **The 837D dental claim (005010X224A2) parses and writes**, closing the
@@ -37,7 +37,6 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   so a remittance can answer a particular submission; its output for
   existing seeds is unchanged, and a new test pins the README sample to what
   the library prints.
-
 - **`x12sdk-mcp`, an MCP server for AI assistants**, behind the optional
   `mcp` extra (`pip install "x12sdk[mcp]"`). Five read-only tools:
   `validate_x12` (where and why a file fails, without echoing its content),
@@ -47,12 +46,13 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   reader also accepts file paths, and the server refuses them so an assistant
   cannot read files off the machine. A bad argument returns its explanation
   to the assistant. Built on the MCP Python SDK 2.x.
-
 - **`scripts/build_dataset.py`**, which builds the public synthetic dataset
   of claims and remittances: X12 file pairs for the 837P, 837I and 837D with
   their 835s, and `claims` and `service_lines` tables read back out of those
   files with the library's own reader, plus a dataset card. The same
   arguments rebuild the same bytes. Outcomes are random, and the card says so.
+  The dataset itself is published at
+  https://huggingface.co/datasets/owgreen-dev/x12sdk under CC BY 4.0.
 
 ### Fixed
 - **A service line adjudicated by more than one payer kept only the last
