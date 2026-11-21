@@ -214,7 +214,7 @@ Codes appear bare; no code-list descriptions are included.
 
 ```shell
 pip install "x12sdk=={version}"
-git clone https://github.com/owgreen-dev/x12sdk && cd x12sdk && git checkout v{version}
+git clone https://github.com/owgreen-dev/x12sdk && cd x12sdk
 python scripts/build_dataset.py --out dataset --seed {seed} --pairs {pairs} --claims-per-pair {claims_per_pair}
 ```
 
