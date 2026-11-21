@@ -4,6 +4,17 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Fixed
+- **The dataset's service-line table could not be shown on Hugging Face**,
+  and codes lost their leading zeros there. The viewer guessed column types
+  from the CSVs, took procedure codes for numbers, and failed on the first
+  dental code; revenue code 0510 read as 510. `scripts/build_dataset.py` now
+  also writes the tables as JSON Lines, where codes are text and amounts
+  numbers, and the dataset card declares every column's type and points the
+  viewer at those files. The CSVs and X12 files are unchanged.
+
 ## 2.3.0 — 2026-11-20
 
 ### Added

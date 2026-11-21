@@ -12,8 +12,14 @@ the files were made from.
 
 Layout written under --out:
 
-    data/claims.csv          one row per claim: as billed, and what the payer did
-    data/service_lines.csv   one row per service line, likewise
+    data/claims.jsonl        one row per claim: as billed, and what the payer did
+    data/service_lines.jsonl one row per service line, likewise
+    data/*.csv               the same two tables as CSV, for spreadsheets
+
+The tables are written twice on purpose. JSON Lines carries types: a code such
+as revenue code 0510 stays text, and amounts stay numbers. CSV does not, and
+a loader that guesses types from it turns 0510 into 510. The dataset card
+points Hugging Face's viewer at the JSON Lines files.
     x12/<type>/pair-NNN.837  a claim submission (ISA..IEA)
     x12/<type>/pair-NNN.835  the remittance answering it
     README.md                the dataset card, with the counts filled in
@@ -23,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import pathlib
 import sys
 from decimal import Decimal
@@ -225,6 +232,39 @@ def _write_csv(path: pathlib.Path, columns: List[str], rows: Iterable[Dict]) -> 
     return count
 
 
+#: Columns written as JSON integers and numbers; every other column is text,
+#: because codes and identifiers (0510, 01, PCN000001) are not quantities.
+INTEGER_COLUMNS = {"pair", "line_count", "patient_birth_year", "line_number", "units"}
+NUMBER_COLUMNS = {
+    "claim_charge",
+    "paid_amount",
+    "contractual_adjustment",
+    "patient_responsibility",
+    "line_charge",
+    "line_paid",
+}
+
+
+def _typed(column: str, value):
+    if value is None or isinstance(value, bool):
+        return value
+    if column in INTEGER_COLUMNS:
+        return int(value)
+    if column in NUMBER_COLUMNS:
+        return float(value)
+    return str(value)
+
+
+def _write_jsonl(path: pathlib.Path, columns: List[str], rows: Iterable[Dict]) -> int:
+    count = 0
+    with path.open("w") as handle:
+        for row in rows:
+            typed = {column: _typed(column, row[column]) for column in columns}
+            handle.write(json.dumps(typed, separators=(",", ":")) + "\n")
+            count += 1
+    return count
+
+
 def build(out: pathlib.Path, seed: int, pairs: int, claims_per_pair: int) -> Dict:
     (out / "data").mkdir(parents=True, exist_ok=True)
     all_claims, all_lines = [], []
@@ -246,6 +286,12 @@ def build(out: pathlib.Path, seed: int, pairs: int, claims_per_pair: int) -> Dic
         "claims": _write_csv(out / "data" / "claims.csv", CLAIM_COLUMNS, all_claims),
         "lines": _write_csv(
             out / "data" / "service_lines.csv", LINE_COLUMNS, all_lines
+        ),
+        "claims_jsonl": _write_jsonl(
+            out / "data" / "claims.jsonl", CLAIM_COLUMNS, all_claims
+        ),
+        "lines_jsonl": _write_jsonl(
+            out / "data" / "service_lines.jsonl", LINE_COLUMNS, all_lines
         ),
         "files": pairs * len(CLAIM_TYPES) * 2,
         "denied": sum(1 for c in all_claims if c["denied"]),

@@ -16,12 +16,89 @@ size_categories:
 task_categories:
 - tabular-classification
 - tabular-regression
+dataset_info:
+- config_name: claims
+  features:
+  - name: claim_type
+    dtype: string
+  - name: pair
+    dtype: int64
+  - name: patient_control_number
+    dtype: string
+  - name: service_date
+    dtype: string
+  - name: claim_charge
+    dtype: float64
+  - name: line_count
+    dtype: int64
+  - name: is_dependent
+    dtype: bool
+  - name: relationship_code
+    dtype: string
+  - name: patient_gender
+    dtype: string
+  - name: patient_birth_year
+    dtype: int64
+  - name: diagnosis_code
+    dtype: string
+  - name: payer_name
+    dtype: string
+  - name: billing_provider_name
+    dtype: string
+  - name: billing_provider_npi
+    dtype: string
+  - name: claim_status_code
+    dtype: string
+  - name: denied
+    dtype: bool
+  - name: paid_amount
+    dtype: float64
+  - name: contractual_adjustment
+    dtype: float64
+  - name: patient_responsibility
+    dtype: float64
+  - name: denial_reason_code
+    dtype: string
+  - name: payer_claim_control_number
+    dtype: string
+- config_name: service_lines
+  features:
+  - name: claim_type
+    dtype: string
+  - name: pair
+    dtype: int64
+  - name: patient_control_number
+    dtype: string
+  - name: line_number
+    dtype: int64
+  - name: procedure_qualifier
+    dtype: string
+  - name: procedure_code
+    dtype: string
+  - name: revenue_code
+    dtype: string
+  - name: units
+    dtype: int64
+  - name: line_charge
+    dtype: float64
+  - name: tooth_number
+    dtype: string
+  - name: tooth_surfaces
+    dtype: string
+  - name: line_paid
+    dtype: float64
+  - name: contractual_adjustment
+    dtype: float64
+  - name: patient_responsibility
+    dtype: float64
+  - name: adjustment_reasons
+    dtype: string
 configs:
 - config_name: claims
-  data_files: data/claims.csv
+  data_files: data/claims.jsonl
   default: true
 - config_name: service_lines
-  data_files: data/service_lines.csv
+  data_files: data/service_lines.jsonl
 ---
 
 # x12sdk synthetic health care claims and remittances
@@ -44,8 +121,13 @@ It was generated with [x12sdk](https://github.com/owgreen-dev/x12sdk)
 | Path | Contents |
 |---|---|
 | `x12/837p/`, `x12/837i/`, `x12/837d/` | {files} X12 files: for each claim type, {pairs} claim submissions (`pair-NNN.837`) each paired with the remittance that answers it (`pair-NNN.835`), {claims_per_pair} claims per file |
-| `data/claims.csv` | {claims} rows, one per claim: as billed, and what the payer did |
-| `data/service_lines.csv` | {lines} rows, one per service line, likewise |
+| `data/claims.jsonl` | {claims} rows, one per claim: as billed, and what the payer did |
+| `data/service_lines.jsonl` | {lines} rows, one per service line, likewise |
+| `data/claims.csv`, `data/service_lines.csv` | the same two tables as CSV, for spreadsheets |
+
+The JSON Lines files carry types: codes such as revenue code `0510` stay
+text, and amounts are numbers. Tools that guess column types from a CSV may
+read `0510` as the number 510, so read the codes as text if you use the CSVs.
 
 Claim types: **837P** professional (005010X222A2), **837I** institutional
 (005010X223A3), **837D** dental (005010X224A2). Remittances are **835**

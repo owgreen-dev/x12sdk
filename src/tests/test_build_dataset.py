@@ -104,3 +104,44 @@ def test_a_non_empty_output_directory_is_refused(builder, tmp_path):
     (tmp_path / "keep.txt").write_text("not mine")
     with pytest.raises(SystemExit):
         builder.main(["--out", str(tmp_path), "--pairs", "1", "--claims-per-pair", "1"])
+
+
+def test_json_lines_tables_carry_types(dataset):
+    """
+    The viewer reads the JSON Lines tables. Codes must stay text (revenue code
+    0510 keeps its zero, CDT codes are not numbers) and amounts numbers.
+    """
+    import json
+
+    out, stats = dataset
+    lines = [
+        json.loads(row)
+        for row in (out / "data" / "service_lines.jsonl").read_text().splitlines()
+    ]
+    claims = (out / "data" / "claims.jsonl").read_text().splitlines()
+    assert len(claims) == stats["claims"] and len(lines) == stats["lines"]
+
+    assert {line["revenue_code"] for line in lines} - {None} == {"0510"}
+    assert all(isinstance(line["procedure_code"], str) for line in lines)
+    assert any(line["procedure_code"].startswith("D") for line in lines)
+    assert all(isinstance(line["line_charge"], float) for line in lines)
+    assert all(isinstance(line["units"], int) for line in lines)
+
+
+def test_the_card_declares_every_column_the_tables_have(builder, dataset):
+    """A column the card does not type is one the viewer has to guess."""
+    import re
+
+    out, _ = dataset
+    card = (out / "README.md").read_text().split("\n---\n", 1)[0]
+    declared = {}
+    for config, body in re.findall(
+        r"- config_name: (\w+)\n  features:\n((?:  - name: .+\n    dtype: .+\n)+)", card
+    ):
+        declared[config] = re.findall(r"- name: (\w+)", body)
+    assert declared == {
+        "claims": builder.CLAIM_COLUMNS,
+        "service_lines": builder.LINE_COLUMNS,
+    }
+    assert "data_files: data/claims.jsonl" in card
+    assert "data_files: data/service_lines.jsonl" in card
