@@ -20,6 +20,27 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   without line detail still gets a row. Every 5010 835 and 837 in the test
   corpus reads; 4010 files are refused with a reason.
 
+- **`x12sdk-validate`: checking files, with the answer in words.** Valid
+  files are summarised (transactions, implementation, claims); for an invalid
+  one each problem is located in the loop hierarchy (`loop 2000A #1 › loop
+  2000B #1 › loop 2300 #1: ...`) without echoing the file's content. Unreadable
+  input is explained (a malformed ISA envelope, not X12, file not found). Exits
+  1 if any file is invalid; `--json` for machines. `x12sdk.validation.check()`
+  from Python; the MCP server's `validate_x12` shares the same formatting.
+- **`x12sdk.matching`: remittances joined to claims** on the patient control
+  number. `match_claims` keeps every payment for a number (payments,
+  reversals, corrections) and drops nothing: unanswered claims are
+  `no remittance`, payments for claims not given are `no claim`.
+  `match_rows` gives flat rows.
+- **`scripts/benchmark.py`** and published numbers: an 835 reads at about
+  8,200 claims/s and an 837P at about 2,100 on an Apple-silicon Mac. Memory
+  grows with the largest transaction: about 540 MB peak for one 837P
+  transaction of 10,000 claims.
+- **MCP Registry entry** (`server.json`, launched with
+  `uvx --from "x12sdk[mcp]==<version>" x12sdk-mcp`), and the ownership line
+  the registry looks for in the README. A test keeps both in step with the
+  package version.
+
 ### Changed
 - The README opens with common tasks: tables, sample files, checking a file,
   AI assistants.

@@ -98,20 +98,52 @@ described exactly, from a denial pattern to a multi-employer enrollment. See
 
 ### Check a file
 
-```python
-from pydantic import ValidationError
-from x12sdk.io import X12ModelReader
-
-try:
-    with X12ModelReader("claims.837") as reader:
-        transactions = list(reader.models())
-except ValidationError as error:
-    print(error)    # names the loop and the rule that failed
+```shell
+x12sdk-validate claims.837 remit.835
 ```
 
-A claim whose total does not match its lines, a missing required segment, an
-unknown code value, a wrong segment count, a hierarchy whose parent ids do not
-line up: each is reported with the location in the file.
+```
+claims.837: valid — 1 transaction (837, 005010X222A2), 12 claims
+remit.835: INVALID
+  loop 2000A #1 › loop 2000B #1 › loop 2300 #1: Claim Amount 9161.47 != Service Line Total 161.47
+```
+
+It exits 1 if any file is invalid, so it can gate a build; `--json` prints
+one record per file. A claim whose total does not match its lines, a missing
+required segment, an unknown code value, a wrong segment count, a hierarchy
+whose parent ids do not line up: each is reported with where it is, without
+echoing the file's content. From Python, `x12sdk.validation.check(path)`
+returns the same result.
+
+### Match remittances to claims
+
+```python
+from x12sdk.matching import match_claims, match_rows
+
+for match in match_claims("claims.837", ["remit-1.835", "remit-2.835"]):
+    print(match.patient_control_number, match.outcome, match.billed, match.paid)
+```
+
+Claims and payments join on the patient control number (CLM01 = CLP01).
+Every payment for a number is kept (a payment, a reversal, a corrected
+payment), and nothing is dropped: a claim no remittance answers is
+`no remittance`, a payment for a claim you did not give is `no claim`.
+`match_rows` gives the same as flat rows for a CSV or a DataFrame.
+
+### Performance
+
+Files are read one transaction at a time; a transaction is validated as a
+whole, so it is held in memory as a whole. From `python scripts/benchmark.py`
+on an Apple-silicon Mac, Python 3.12, one transaction per file:
+
+| File | Claims | Size | Read and validate | Peak memory |
+|---|---:|---:|---:|---:|
+| 835 | 10,000 | 1.6 MB | 1.2 s (about 8,200 claims/s) | 203 MB |
+| 837P | 10,000 | 4.4 MB | 4.7 s (about 2,100 claims/s) | 536 MB |
+
+Memory grows with the size of the largest transaction, not of the file; a
+file of many moderate transactions streams in roughly constant memory. Run the
+script on your own machine for your own numbers.
 
 ![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
@@ -591,6 +623,8 @@ published as the [x12sdk synthetic claims and remittances](https://huggingface.c
 dataset; `scripts/build_dataset.py` rebuilds it byte for byte.
 
 ## AI assistants (MCP)
+
+<!-- mcp-name: io.github.owgreen-dev/x12sdk -->
 
 `x12sdk-mcp` is an [MCP](https://modelcontextprotocol.io) server, so an AI
 assistant can read, check and generate X12 with the library instead of

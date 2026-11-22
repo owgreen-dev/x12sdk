@@ -59,6 +59,7 @@ x12sdk = "x12sdk.cli:main"
 x12sdk-generate = "x12sdk.generate.cli:main"
 x12sdk-mcp = "x12sdk.mcp_server:main"
 x12sdk-table = "x12sdk.tables:main"
+x12sdk-validate = "x12sdk.validation:main"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

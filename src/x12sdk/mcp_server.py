@@ -35,6 +35,7 @@ from .generate import generate_claim_pair as _generate_claim_pair
 from .generate.cli import _SETS
 from .io import X12ModelReader
 from .support import is_x12_data, is_x12_file
+from .validation import problems
 
 INSTRUCTIONS = """
 Tools for ASC X12 5010 health care transactions: 837P/837I/837D claims, 835
@@ -66,15 +67,10 @@ def _errors(error: Exception) -> List[Dict[str, str]]:
     Where and why a file failed, without echoing its content back: Pydantic's
     error carries the offending input, which may be large or sensitive.
     """
-    if isinstance(error, ValidationError):
-        return [
-            {
-                "location": ".".join(str(part) for part in detail["loc"]),
-                "message": detail["msg"],
-            }
-            for detail in error.errors(include_input=False, include_url=False)
-        ]
-    return [{"location": "", "message": str(error)}]
+    return [
+        {"location": problem.location, "message": problem.message}
+        for problem in problems(error)
+    ]
 
 
 def _transaction(model: Any) -> Dict[str, Optional[str]]:

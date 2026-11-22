@@ -44,3 +44,4 @@ jobs:
           x12sdk -m "/tmp/generated.$set" > /dev/null
         done
         x12sdk-generate 835 --seed 1 -n 3 --out /tmp/remit.835 && x12sdk-table /tmp/remit.835 -o /tmp/remit.csv
+        x12sdk-validate /tmp/remit.835 /tmp/generated.837d

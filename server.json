@@ -1,0 +1,34 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.owgreen-dev/x12sdk",
+  "title": "x12sdk",
+  "description": "Read, validate and generate synthetic HIPAA X12 claims, remittances and eligibility files",
+  "repository": {
+    "url": "https://github.com/owgreen-dev/x12sdk",
+    "source": "github"
+  },
+  "version": "2.3.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "x12sdk",
+      "version": "2.3.0",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "x12sdk[mcp]==2.3.0"
+        },
+        {
+          "type": "positional",
+          "value": "x12sdk-mcp"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
