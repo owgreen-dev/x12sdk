@@ -1,15 +1,56 @@
 # x12sdk
 
-Synthetic HIPAA X12 claims, remittances, eligibility and enrollment files with
-no PHI in them, and typed [Pydantic v2](https://docs.pydantic.dev/) models to
-parse, validate and write them.
+Read, check and generate HIPAA X12 health care transactions in Python:
+claims (837P, 837I, 837D), remittances (835), eligibility (270/271), claim
+status (276/277) and enrollment (834).
 
-There is no shareable corpus of real X12: every 837 claim and 835 remittance
-carries protected health information, which is why nobody builds on X12
-casually. x12sdk generates valid files from a seed instead.
+- **835 or 837 to a spreadsheet:** `x12sdk-table remit.835 -o remit.csv`, one
+  row per service line.
+- **Sample files with no PHI:** realistic synthetic claims and remittances
+  from a seed, or a [ready-made dataset](https://huggingface.co/datasets/owgreen-dev/x12sdk)
+  of 30,000 claims with their remittances.
+- **Every transaction typed and checked:** each file parses into
+  [Pydantic v2](https://docs.pydantic.dev/) models validated against the
+  implementation guide rules, and writes back out byte for byte.
+- **For AI assistants:** an [MCP server](#ai-assistants-mcp) that reads,
+  checks and generates X12 through the library.
+
+Everything runs locally; no file is uploaded anywhere.
+
+## Common tasks
+
+### Turn an 835 or 837 into a table
 
 ```shell
 pip install x12sdk
+x12sdk-table remit.835 -o remit.csv
+```
+
+```python
+from x12sdk.tables import read_lines, to_dataframe
+
+rows = read_lines("remit.835")       # list of dicts, one per service line
+frame = to_dataframe("remit.835")    # pandas: pip install "x12sdk[pandas]"
+```
+
+An 835 becomes one row per paid service line: the payment, the claim, the
+patient, the procedure, what was charged and paid, and the adjustments totalled
+by group (`co_amount`, `pr_amount`, `oa_amount`, `pi_amount`, `cr_amount`)
+alongside every `GROUP-REASON` code. An 837 (professional, institutional or
+dental) becomes one row per billed line, with diagnoses, revenue codes and
+teeth where they apply. Claim rows and remittance rows join on
+`patient_control_number` (CLM01 = CLP01). The columns are fixed
+(`x12sdk.tables.REMITTANCE_COLUMNS`, `CLAIM_COLUMNS`), so a pipeline built on
+them does not move. For one row per adjustment instead, see
+[Denial analytics](#denial-analytics).
+
+### Get sample 837 and 835 files
+
+There is no shareable corpus of real X12: every claim and remittance carries
+protected health information. x12sdk generates valid files from a seed
+instead:
+
+```shell
 x12sdk-generate 835 --seed 7 --claims 2 --payer-name "EXAMPLE HEALTH PLAN" --payee-name "EXAMPLE MEDICAL GROUP"
 ```
 
@@ -49,15 +90,28 @@ IEA*1*000000001~
 The same seed reproduces the same bytes. Every file parses through the
 library's own validators, round-trips byte for byte, and carries both the
 subscriber and the dependent branch of the hierarchy, the place real code
-loses claims. All nine supported transaction sets generate; scenarios can be
+loses claims. All nine supported transaction sets generate, a claim can be
+generated together with the remittance that answers it, and scenarios can be
 described exactly, from a denial pattern to a multi-employer enrollment. See
-[Generating synthetic files](#generating-synthetic-files).
+[Generating synthetic files](#generating-synthetic-files), or download the
+[dataset](https://huggingface.co/datasets/owgreen-dev/x12sdk).
 
-Ready-made data: [**x12sdk synthetic claims and remittances**](https://huggingface.co/datasets/owgreen-dev/x12sdk)
-on Hugging Face, 30,000 professional, institutional and dental claims as X12
-with the remittances that answer them, plus flat tables. And for AI
-assistants, an [MCP server](#ai-assistants-mcp) that parses, validates and
-generates X12 through the library.
+### Check a file
+
+```python
+from pydantic import ValidationError
+from x12sdk.io import X12ModelReader
+
+try:
+    with X12ModelReader("claims.837") as reader:
+        transactions = list(reader.models())
+except ValidationError as error:
+    print(error)    # names the loop and the rule that failed
+```
+
+A claim whose total does not match its lines, a missing required segment, an
+unknown code value, a wrong segment count, a hierarchy whose parent ids do not
+line up: each is reported with the location in the file.
 
 ![License](https://img.shields.io/github/license/owgreen-dev/x12sdk)
 ![CI](https://github.com/owgreen-dev/x12sdk/actions/workflows/continuous-integration.yml/badge.svg)
@@ -377,7 +431,7 @@ An 835 tells you what a payer did to a claim, but in a shape built for
 transmission: adjustments nested at claim and service line level, up to six
 reason/amount pairs per CAS segment, remark codes in a different segment
 again. `x12sdk.denials` flattens that to one record per reason code and
-aggregates it the way a recovery or program integrity analyst asks the
+aggregates it the way a revenue-cycle or payer analytics team asks the
 question.
 
 ```python

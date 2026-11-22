@@ -6,6 +6,24 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 
 ## Unreleased
 
+### Added
+- **`x12sdk.tables` and `x12sdk-table`: an 835 or 837 as one row per service
+  line**, for spreadsheets, SQL and pandas. `read_lines`, `to_dataframe`
+  (pandas extra) and `write_csv`; `x12sdk-table remit.835 -o remit.csv` needs
+  nothing extra. Remittance rows carry the payment, claim, patient, procedure,
+  amounts and adjustments totalled by group plus every `GROUP-REASON` code;
+  claim rows (837P, 837I, 837D) carry the claim, patient, payer, provider,
+  diagnoses, revenue codes and teeth. The columns are fixed
+  (`REMITTANCE_COLUMNS`, `CLAIM_COLUMNS`); claim and remittance rows join on
+  `patient_control_number`. Composites are split on whatever component
+  separator the file uses, so `HC>99213` reads like `HC:99213`. A claim paid
+  without line detail still gets a row. Every 5010 835 and 837 in the test
+  corpus reads; 4010 files are refused with a reason.
+
+### Changed
+- The README opens with common tasks: tables, sample files, checking a file,
+  AI assistants.
+
 ### Fixed
 - **The dataset's service-line table could not be shown on Hugging Face**,
   and codes lost their leading zeros there. The viewer guessed column types

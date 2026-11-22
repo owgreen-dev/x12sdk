@@ -5,7 +5,7 @@ An 835 tells you what a payer did to a claim, but it tells you in a shape
 built for transmission: adjustments nested at claim and service line level,
 six reason/amount pairs to a CAS segment, remark codes parked in a different
 segment again. This package flattens that into one record per reason code and
-aggregates it the way a recovery or program integrity analyst asks the
+aggregates it the way a revenue-cycle or payer analytics team asks the
 question — which payer denied what, how often, for how much.
 
 ```python
