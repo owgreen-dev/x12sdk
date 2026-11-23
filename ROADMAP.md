@@ -1,8 +1,9 @@
 # Roadmap
 
 Dates are intentions, not promises; the [changelog](CHANGELOG.md) is the
-record. One release a month, around the 20th, each with at least one line of
-user-visible value. Patch releases are for bugs only and are unscheduled.
+record. At least one release a month, each with at least one line of
+user-visible value; a release goes out when a useful set of changes is ready
+rather than waiting for a date. Patch releases are for bugs only.
 
 Labels: **Committed** ships in that quarter or the next with a note.
 **Target** is intended and may move. **Possible** is an idea that ships only
@@ -21,7 +22,7 @@ if someone wants it, which could be you.
 4. No X12 or WPC code-list text is ever vendored, and no sample ever
    contains PHI, real or realistic-looking.
 
-## Q4 2026 — 2.2, 2.3, 2.4
+## Q4 2026
 
 - **Committed:** `x12sdk-generate`, a console script so a synthetic file is
   one shell command. Python 3.14 in the test matrix. An `X12ModelWriter`
@@ -35,6 +36,10 @@ if someone wants it, which could be you.
 - **Committed:** a public synthetic dataset on Hugging Face, built with the
   generators, for anyone who needs X12 data for analysis or machine learning
   and has no public source to draw on.
+- **Committed, shipped in 2.4:** an 835 or 837 as one row per service line
+  for spreadsheets, SQL and pandas (`x12sdk-table`); `x12sdk-validate`, which
+  says where a file is invalid in words; claim-to-remittance matching; a
+  published benchmark; and a listing in the MCP Registry.
 - **Committed:** the 277CA claim acknowledgment (005010X214).
 - **Committed:** claim pairs can follow published, administrative denial
   rules instead of random outcomes: a claim filed too late, missing required
@@ -48,7 +53,7 @@ if someone wants it, which could be you.
   generators emit coordination-of-benefits loops.
 - **Possible:** property-based tests as an optional audit leg.
 
-## Q1 2027 — 2.5, 2.6, 2.7
+## Q1 2027
 
 - **Committed:** the 278 health care services review ([#4](https://github.com/owgreen-dev/x12sdk/issues/4)).
 - **Committed:** denial analytics carry RARC remark codes, and the reason-code
@@ -64,7 +69,7 @@ if someone wants it, which could be you.
 - **Possible:** a structural diff of two transactions; a documentation site
   built from the docstrings.
 
-## Q2 2027 — 3.0, 3.1, 3.2
+## Q2 2027
 
 - **Committed, 3.0.0:** composite fields become first-class models with named
   parts ([#6](https://github.com/owgreen-dev/x12sdk/issues/6)). Python 3.10 support ends (it reached end of life in October 2026). Every queued reader-visible correction lands here, with a migration guide.
@@ -77,7 +82,7 @@ if someone wants it, which could be you.
 - **Possible:** a streaming performance pass for very large files; example
   notebooks on generated data.
 
-## Q3 2027 — 3.3, 3.4, 3.5
+## Q3 2027
 
 - **Target:** a release reserved for what external contributors need.
 - **Target:** a fifth leg for the audit suite, for whichever bug class the

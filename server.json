@@ -7,19 +7,19 @@
     "url": "https://github.com/owgreen-dev/x12sdk",
     "source": "github"
   },
-  "version": "2.3.0",
+  "version": "2.4.0",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "x12sdk",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "runtimeHint": "uvx",
       "runtimeArguments": [
         {
           "type": "named",
           "name": "--from",
-          "value": "x12sdk[mcp]==2.3.0"
+          "value": "x12sdk[mcp]==2.4.0"
         },
         {
           "type": "positional",

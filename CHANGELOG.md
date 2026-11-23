@@ -4,7 +4,7 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
-## Unreleased
+## 2.4.0 — 2026-11-22
 
 ### Added
 - **`x12sdk.tables` and `x12sdk-table`: an 835 or 837 as one row per service
@@ -44,6 +44,8 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 ### Changed
 - The README opens with common tasks: tables, sample files, checking a file,
   AI assistants.
+- The roadmap promises at least one release a month rather than one fixed
+  release around the 20th; releases go out when a useful set is ready.
 
 ### Fixed
 - **The dataset's service-line table could not be shown on Hugging Face**,
