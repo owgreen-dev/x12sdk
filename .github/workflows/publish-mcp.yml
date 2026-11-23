@@ -1,0 +1,89 @@
+name: Publish to MCP Registry
+
+# Lists the released version of x12sdk-mcp in the official MCP Registry
+# (https://registry.modelcontextprotocol.io) once the Release workflow has put
+# that version on PyPI: the registry checks the PyPI package exists and that
+# its description carries `mcp-name: io.github.owgreen-dev/x12sdk`.
+# Authentication is GitHub OIDC, so no secret is stored; the
+# io.github.owgreen-dev namespace is granted because this repository belongs
+# to owgreen-dev. Can also be run by hand for a tag that is already on PyPI.
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to list, e.g. v2.4.0"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # only after a successful tag release, or when run by hand
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC authentication to the registry
+      contents: read
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.13
+      TAG: ${{ github.event.inputs.tag || github.event.workflow_run.head_branch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Check server.json names the tagged version
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          test "$(jq -r .version server.json)" = "$version"
+          test "$(jq -r '.packages[0].version' server.json)" = "$version"
+
+      - name: Wait for the version on PyPI
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent "https://pypi.org/pypi/x12sdk/${version}/json" > /dev/null; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "x12sdk ${version} did not appear on PyPI" >&2
+          exit 1
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          arch="$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')"
+          archive="mcp-publisher_${os}_${arch}.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish

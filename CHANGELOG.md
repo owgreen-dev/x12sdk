@@ -4,6 +4,13 @@ All notable changes to x12sdk. The project was forked from
 [LinuxForHealth x12](https://github.com/LinuxForHealth/x12) at its final
 release, 0.57.0 (June 2022); entries below describe changes made since.
 
+## Unreleased
+
+### Changed
+- Each tagged release is listed in the official MCP Registry automatically
+  once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
+  secret). `glama.json` names the maintainer for the Glama directory.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added
