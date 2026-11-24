@@ -9,7 +9,8 @@ status (276/277) and enrollment (834).
 **[Try it in your browser](https://huggingface.co/spaces/owgreen-dev/x12sdk-playground)**:
 check a file and see where it breaks, turn an 835 into a CSV, or generate
 sample files, with nothing to install. The page runs x12sdk in your browser
-tab, so your file is never uploaded.
+tab, so your file is never uploaded. Guides and the API reference are at
+**[owgreen-dev.github.io/x12sdk](https://owgreen-dev.github.io/x12sdk/)**.
 
 - **835 or 837 to a spreadsheet:** `x12sdk-table remit.835 -o remit.csv`, one
   row per service line.

@@ -37,6 +37,8 @@ dynamic = ["version"]
 pandas = ["pandas>=2.0"]
 # The x12sdk-mcp server, for AI assistants; see x12sdk.mcp_server.
 mcp = ["mcp>=2.3,<3"]
+# Builds the documentation site: sphinx-build -W -b html docs docs/_build/html
+docs = ["sphinx>=8", "furo>=2024.8", "myst-parser>=4"]
 dev = [
     "pandas>=2.0",
     "mcp>=2.3,<3",
@@ -50,6 +52,8 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/owgreen-dev/x12sdk"
 Repository = "https://github.com/owgreen-dev/x12sdk"
+Documentation = "https://owgreen-dev.github.io/x12sdk/"
+Playground = "https://huggingface.co/spaces/owgreen-dev/x12sdk-playground"
 Issues = "https://github.com/owgreen-dev/x12sdk/issues"
 Changelog = "https://github.com/owgreen-dev/x12sdk/blob/main/CHANGELOG.md"
 "Upstream (LinuxForHealth x12)" = "https://github.com/LinuxForHealth/x12"

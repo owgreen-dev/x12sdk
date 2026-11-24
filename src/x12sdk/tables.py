@@ -42,6 +42,7 @@ from typing import Any, Dict, Iterator, List, Optional, Sequence, TextIO
 
 from .io import X12ModelReader
 
+#: The columns of an 835 row, one row per paid service line, in order.
 REMITTANCE_COLUMNS: Sequence[str] = (
     "transaction_set",
     "transaction_control_number",
@@ -82,6 +83,7 @@ REMITTANCE_COLUMNS: Sequence[str] = (
     "remark_codes",
 )
 
+#: The columns of an 837 row, one row per billed service line, in order.
 CLAIM_COLUMNS: Sequence[str] = (
     "transaction_set",
     "transaction_control_number",

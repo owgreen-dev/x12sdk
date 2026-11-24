@@ -135,3 +135,6 @@ dmypy.json
 
 # OS Specific
 .DS_Store
+
+# Sphinx output
+docs/_build/

@@ -12,6 +12,12 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   CSV, generate synthetic files and claim/remittance pairs, and match claims
   to payments. It runs the released x12sdk in Pyodide, so files are processed
   in the visitor's browser and never uploaded.
+- **A documentation site** at https://owgreen-dev.github.io/x12sdk/: task
+  guides (tables, checking files, generating, matching, reading and writing,
+  denial analytics, MCP, CLI) and an API reference, built with Sphinx and
+  Furo from `docs/`. Every Python example on it runs in the test suite
+  (`test_docs.py`), and the build fails on any warning. `pip install
+  "x12sdk[docs]"` installs the tools.
 
 ### Changed
 - Each tagged release is listed in the official MCP Registry automatically

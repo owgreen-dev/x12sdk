@@ -27,6 +27,7 @@ from .io import X12ModelReader
 #: The outcomes :attr:`Match.outcome` can take.
 OUTCOMES = ("paid", "denied", "no remittance", "no claim")
 
+#: The columns of a :func:`match_rows` row, in order.
 MATCH_COLUMNS: Sequence[str] = (
     "patient_control_number",
     "outcome",
