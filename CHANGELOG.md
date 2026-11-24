@@ -6,6 +6,13 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 
 ## Unreleased
 
+### Added
+- **A browser playground** (`playground/`, published as a Hugging Face
+  Space): check a file and see where it breaks, turn an 835 or 837 into a
+  CSV, generate synthetic files and claim/remittance pairs, and match claims
+  to payments. It runs the released x12sdk in Pyodide, so files are processed
+  in the visitor's browser and never uploaded.
+
 ### Changed
 - Each tagged release is listed in the official MCP Registry automatically
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored

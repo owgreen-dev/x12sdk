@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>x12sdk playground</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
+<meta name="description" content="Check, tabulate, generate and match HIPAA X12 835 and 837 files in your browser. Nothing is uploaded.">
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --line: #e2e1dc;
+  --accent: #1f5fbf; --accent-text: #ffffff; --ok: #1d7a46; --ok-bg: #e7f4ec; --bad: #b3261e; --bad-bg: #fbeaea;
+  --code-bg: #f1f0ec; --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a3a29b; --line: #34332f;
+    --accent: #6ea2f0; --accent-text: #0d1a2e; --ok: #6fcf97; --ok-bg: #16291e; --bad: #f2a29c; --bad-bg: #331a18;
+    --code-bg: #262624;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.lede { margin: 0 0 12px; color: var(--muted); max-width: 70ch; }
+.privacy { display: inline-flex; gap: 8px; align-items: center; font-size: 14px;
+  background: var(--ok-bg); color: var(--ok); padding: 6px 10px; border-radius: 999px; }
+.status { font-size: 13px; color: var(--muted); margin: 12px 0 18px; min-height: 20px; }
+.status.ready { color: var(--ok); }
+.status.failed { color: var(--bad); }
+nav { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; overflow-x: auto; }
+nav button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted);
+  padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+section[hidden] { display: none; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+input, select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 7px 9px; min-width: 0; }
+input[type=number] { width: 110px; }
+textarea { width: 100%; min-height: 190px; resize: vertical; font: 12.5px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text); background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.drop { border: 1.5px dashed var(--line); border-radius: var(--radius); padding: 10px; transition: border-color .15s; }
+.drop.over { border-color: var(--accent); }
+.hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+button.primary, button.secondary { font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-text); border: 1px solid var(--accent); }
+button.secondary { background: none; color: var(--text); border: 1px solid var(--line); }
+button:disabled { opacity: .5; cursor: progress; }
+.verdict { padding: 10px 12px; border-radius: 8px; font-weight: 600; margin-bottom: 10px; }
+.verdict.ok { background: var(--ok-bg); color: var(--ok); }
+.verdict.bad { background: var(--bad-bg); color: var(--bad); }
+.problems { margin: 0; padding-left: 20px; }
+.problems li { margin: 4px 0; }
+.where { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.tablewrap { overflow: auto; max-height: 440px; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; font-size: 12.5px; white-space: nowrap; }
+th, td { padding: 5px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+th { position: sticky; top: 0; background: var(--panel); font-weight: 600; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 0 8px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 720px) { .two { grid-template-columns: 1fr; } }
+h2 { font-size: 16px; margin: 0 0 8px; }
+.error { color: var(--bad); font-weight: 600; }
+footer { margin-top: 28px; font-size: 13px; color: var(--muted); }
+footer a, .lede a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>x12sdk playground</h1>
+  <p class="lede">Check, tabulate, generate and match HIPAA X12 health care files: claims (837P/I/D),
+    remittances (835), eligibility (270/271), claim status (276/277) and enrollment (834).
+    Powered by <a href="https://github.com/owgreen-dev/x12sdk">x12sdk</a>, an open-source Python library.</p>
+  <span class="privacy">🔒 Runs entirely in your browser. Files you open are never uploaded.</span>
+  <div class="status" id="status" role="status">Loading Python in your browser… the first visit downloads about 14 MB; later visits are quick.</div>
+
+  <nav role="tablist">
+    <button role="tab" aria-selected="true" data-tab="check">Check a file</button>
+    <button role="tab" aria-selected="false" data-tab="generate">Generate samples</button>
+    <button role="tab" aria-selected="false" data-tab="match">Match claims to payments</button>
+  </nav>
+
+  <!-- Check -->
+  <section id="tab-check">
+    <div class="panel">
+      <div class="drop" data-drop="check-input">
+        <textarea id="check-input" spellcheck="false" placeholder="Paste X12 here, drop a file on this box, or use the buttons below. It starts with ISA*…"></textarea>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="check-run" disabled>Check</button>
+        <button class="secondary" data-open="check-input">Open a file…</button>
+        <button class="secondary" id="check-sample" disabled>Try a sample 835</button>
+        <button class="secondary" id="check-broken" disabled>Try a broken 837</button>
+      </div>
+      <p class="hint">Valid 835 and 837 files also become a table with one row per service line, ready to download as CSV.</p>
+    </div>
+    <div id="check-out"></div>
+  </section>
+
+  <!-- Generate -->
+  <section id="tab-generate" hidden>
+    <div class="panel">
+      <div class="row">
+        <label>File
+          <select id="gen-kind">
+            <option value="835">835 remittance</option>
+            <option value="837P">837P professional claims</option>
+            <option value="837I">837I institutional claims</option>
+            <option value="837D">837D dental claims</option>
+            <option value="pair">837P + the 835 that pays it</option>
+            <option value="270">270 eligibility inquiry</option>
+            <option value="271">271 eligibility response</option>
+            <option value="276">276 claim status inquiry</option>
+            <option value="277">277 claim status response</option>
+            <option value="834">834 enrollment</option>
+          </select>
+        </label>
+        <label>How many <input type="number" id="gen-count" min="1" max="2000" value="10"></label>
+        <label>Seed <input type="number" id="gen-seed" min="0" value="1"></label>
+        <label id="gen-denials-wrap" hidden>Denial rate <input type="number" id="gen-denials" min="0" max="1" step="0.05" value="0.15"></label>
+        <button class="primary" id="gen-run" disabled>Generate</button>
+      </div>
+      <p class="hint">Every file is synthetic: invented patients, providers and payers, no PHI. The same seed always makes the same file.</p>
+    </div>
+    <div id="gen-out"></div>
+  </section>
+
+  <!-- Match -->
+  <section id="tab-match" hidden>
+    <div class="panel">
+      <div class="two">
+        <div>
+          <h2>Claims (837)</h2>
+          <div class="drop" data-drop="match-claims"><textarea id="match-claims" spellcheck="false" placeholder="Paste or drop an 837"></textarea></div>
+          <button class="secondary" data-open="match-claims" style="margin-top:6px">Open a file…</button>
+        </div>
+        <div>
+          <h2>Remittance (835)</h2>
+          <div class="drop" data-drop="match-remits"><textarea id="match-remits" spellcheck="false" placeholder="Paste or drop an 835"></textarea></div>
+          <button class="secondary" data-open="match-remits" style="margin-top:6px">Open a file…</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="primary" id="match-run" disabled>Match</button>
+        <button class="secondary" id="match-sample" disabled>Fill with a sample pair</button>
+      </div>
+      <p class="hint">Claims and payments join on the patient control number (CLM01 = CLP01). Claims with no payment, and payments for claims you didn't give, are kept.</p>
+    </div>
+    <div id="match-out"></div>
+  </section>
+
+  <footer>
+    x12sdk on <a href="https://github.com/owgreen-dev/x12sdk">GitHub</a> ·
+    <a href="https://pypi.org/project/x12sdk/">PyPI</a> (<code>pip install x12sdk</code>) ·
+    <a href="https://huggingface.co/datasets/owgreen-dev/x12sdk">a 30,000-claim synthetic dataset</a> ·
+    <a href="https://github.com/owgreen-dev/x12sdk#ai-assistants-mcp">an MCP server for AI assistants</a>.
+    Not affiliated with X12 or any payer. <span id="version"></span>
+  </footer>
+</main>
+
+<input type="file" id="file-picker" hidden>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const worker = new Worker("worker.js", { type: "module" });
+worker.onerror = (event) => {
+  event.preventDefault();
+  $("status").textContent = "Python failed to load" + (event.message ? ": " + event.message : "") +
+    ". Check your connection and reload the page.";
+  $("status").className = "status failed";
+};
+const pending = new Map();
+let nextId = 1;
+let ready = false;
+
+function run(action, ...args) {
+  return new Promise((resolve, reject) => {
+    const id = nextId++;
+    pending.set(id, { resolve, reject });
+    worker.postMessage({ id, action, args });
+  });
+}
+
+worker.onmessage = ({ data }) => {
+  if (data.type === "ready") {
+    ready = true;
+    $("status").textContent = `Ready · x12sdk ${data.version} running in this tab`;
+    $("status").className = "status ready";
+    $("version").textContent = `Playground uses x12sdk ${data.version}.`;
+    document.querySelectorAll("button:disabled").forEach((b) => (b.disabled = false));
+  } else if (data.type === "failed") {
+    $("status").textContent = "Python failed to load: " + data.message + " Reload the page to try again.";
+    $("status").className = "status failed";
+  } else if (data.type === "result") {
+    const waiting = pending.get(data.id);
+    pending.delete(data.id);
+    if ("error" in data) waiting.reject(new Error(data.error));
+    else waiting.resolve(data.ok);
+  }
+};
+
+// ---------- small helpers ----------
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === "class") node.className = value;
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value);
+  }
+  for (const child of children.flat()) if (child != null) node.append(child);
+  return node;
+}
+
+function download(text, name, type = "text/plain") {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const link = el("a", { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function busy(button, work) {
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = "Working…";
+  try { await work(); } finally { button.disabled = false; button.textContent = label; }
+}
+
+function showError(target, error) {
+  target.replaceChildren(el("div", { class: "panel" }, el("p", { class: "error" }, error.message)));
+}
+
+const NUMERIC = /(amount|billed|paid|charge|responsibility|units|count|quantity)$/;
+
+function tableView(table, title, fileName) {
+  const head = el("tr", {}, table.columns.map((c) => el("th", {}, c)));
+  const body = table.rows.map((row) =>
+    el("tr", {}, row.map((cell, i) => el("td", NUMERIC.test(table.columns[i]) ? { class: "num" } : {}, cell))));
+  const shown = table.total > table.rows.length
+    ? `showing the first ${table.rows.length.toLocaleString()} of ${table.total.toLocaleString()} rows`
+    : `${table.total.toLocaleString()} rows`;
+  return el("div", { class: "panel" },
+    el("div", { class: "bar" },
+      el("h2", { style: "margin:0" }, `${title} · ${shown}`),
+      el("button", { class: "primary", onclick: () => download(table.csv, fileName, "text/csv") }, "Download CSV")),
+    el("div", { class: "tablewrap" }, el("table", {}, el("thead", {}, head), el("tbody", {}, body))));
+}
+
+function fileView(text, title, fileName, extra = []) {
+  const area = el("textarea", { spellcheck: "false", readonly: "" });
+  area.value = text;
+  return el("div", { class: "panel" },
+    el("div", { class: "bar" }, el("h2", { style: "margin:0" }, title),
+      el("div", { class: "row" },
+        ...extra,
+        el("button", { class: "secondary", onclick: () => download(text, fileName) }, "Download"))),
+    area);
+}
+
+// ---------- tabs ----------
+function showTab(name) {
+  document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+  for (const tab of ["check", "generate", "match"]) $("tab-" + tab).hidden = tab !== name;
+}
+document.querySelectorAll("nav button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+// ---------- opening and dropping files ----------
+let openTarget = null;
+document.querySelectorAll("[data-open]").forEach((b) => b.addEventListener("click", () => {
+  openTarget = b.dataset.open;
+  $("file-picker").value = "";
+  $("file-picker").click();
+}));
+$("file-picker").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (file && openTarget) $(openTarget).value = await file.text();
+});
+document.querySelectorAll("[data-drop]").forEach((zone) => {
+  zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+  zone.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    zone.classList.remove("over");
+    const file = e.dataTransfer.files[0];
+    if (file) $(zone.dataset.drop).value = await file.text();
+  });
+});
+
+// ---------- check ----------
+async function check() {
+  const out = $("check-out");
+  try {
+    const result = await run("inspect", $("check-input").value);
+    const parts = [];
+    if (result.valid) {
+      const kinds = result.transactions.map((t) =>
+        `${t.transaction_set}${t.implementation ? " (" + t.implementation + ")" : ""}${t.claims != null ? ", " + t.claims.toLocaleString() + " claims" : ""}`);
+      parts.push(el("div", { class: "verdict ok" }, `Valid · ${result.transactions.length} transaction${result.transactions.length === 1 ? "" : "s"}: ${kinds.join("; ")}`));
+    } else {
+      parts.push(el("div", { class: "verdict bad" }, `Not valid · ${result.problems.length} problem${result.problems.length === 1 ? "" : "s"}`));
+      parts.push(el("ol", { class: "problems" }, result.problems.map((p) =>
+        el("li", {}, el("span", { class: "where" }, p.where), " — ", p.message))));
+    }
+    if (result.table_note) parts.push(el("p", { class: "hint" }, result.table_note));
+    out.replaceChildren(el("div", { class: "panel" }, parts));
+    if (result.table) out.append(tableView(result.table, "Service lines", "service-lines.csv"));
+  } catch (error) { showError(out, error); }
+}
+$("check-run").addEventListener("click", (e) => busy(e.target, check));
+$("check-sample").addEventListener("click", (e) => busy(e.target, async () => {
+  $("check-input").value = await run("sample", "835", 7, 5);
+  await check();
+}));
+$("check-broken").addEventListener("click", (e) => busy(e.target, async () => {
+  const good = await run("sample", "837P", 7, 3);
+  // a claim amount that is not a number, the kind of mistake a payer rejects
+  $("check-input").value = good.replace(/CLM\*([^*]+)\*[^*]+/, "CLM*$1*12O.00");
+  await check();
+}));
+
+// ---------- generate ----------
+$("gen-kind").addEventListener("change", () => { $("gen-denials-wrap").hidden = $("gen-kind").value !== "pair"; });
+$("gen-run").addEventListener("click", (e) => busy(e.target, async () => {
+  const out = $("gen-out");
+  const kind = $("gen-kind").value, count = $("gen-count").value, seed = $("gen-seed").value;
+  try {
+    if (kind === "pair") {
+      const made = await run("pair", "837P", seed, count, $("gen-denials").value);
+      out.replaceChildren(
+        el("div", { class: "two" },
+          fileView(made.claim, "837P claims", `claims-seed${seed}.837`),
+          fileView(made.remittance, "835 remittance", `remittance-seed${seed}.835`)),
+        tableView(made.matches, "How they match", `matches-seed${seed}.csv`));
+    } else {
+      const text = await run("sample", kind, seed, count);
+      const toCheck = el("button", { class: "secondary", onclick: () => {
+        $("check-input").value = text; showTab("check"); $("check-run").click(); } }, "Check this file");
+      out.replaceChildren(fileView(text, `${kind} · seed ${seed}`, `sample-seed${seed}.${kind.toLowerCase()}`, [toCheck]));
+    }
+  } catch (error) { showError(out, error); }
+}));
+
+// ---------- match ----------
+$("match-sample").addEventListener("click", (e) => busy(e.target, async () => {
+  const made = await run("pair", "837P", 3, 20, 0.15);
+  $("match-claims").value = made.claim;
+  $("match-remits").value = made.remittance;
+}));
+$("match-run").addEventListener("click", (e) => busy(e.target, async () => {
+  const out = $("match-out");
+  try {
+    const result = await run("match", $("match-claims").value, $("match-remits").value);
+    out.replaceChildren(tableView(result.matches, "Claims and payments", "matches.csv"));
+  } catch (error) { showError(out, error); }
+}));
+</script>
+</body>
+</html>

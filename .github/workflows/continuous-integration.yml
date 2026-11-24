@@ -26,8 +26,8 @@ jobs:
         pip install -e ".[dev]"
     - name: Lint
       run: |
-        ruff check src
-        ruff format --check src
+        ruff check src playground
+        ruff format --check src playground
     - name: Dependency licenses
       run: |
         pip install pip-licenses
