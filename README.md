@@ -1,5 +1,7 @@
 # x12sdk
 
+[![x12sdk MCP server](https://glama.ai/mcp/servers/owgreen-dev/x12sdk/badges/score.svg)](https://glama.ai/mcp/servers/owgreen-dev/x12sdk)
+
 Read, check and generate HIPAA X12 health care transactions in Python:
 claims (837P, 837I, 837D), remittances (835), eligibility (270/271), claim
 status (276/277) and enrollment (834).
