@@ -181,9 +181,11 @@ def set_plb_footer_loop(context: X12ParserContext, segment_data: Dict) -> None:
     :param segment_data: The current segment data
     """
 
-    context.set_loop_context(
-        TransactionLoops.FOOTER, context.transaction_data["footer"]
-    )
+    footer = context.transaction_data["footer"]
+    if "plb_segment" not in footer:
+        footer.update({"plb_segment": []})
+
+    context.set_loop_context(TransactionLoops.FOOTER, footer)
 
 
 @match("SE")

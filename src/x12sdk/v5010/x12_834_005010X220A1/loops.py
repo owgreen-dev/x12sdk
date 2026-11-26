@@ -248,7 +248,7 @@ class Loop2310(X12SegmentGroup):
 
     lx_segment: LxSegment
     nm1_segment: Loop2310Nm1Segment
-    n3_segment: Optional[N3Segment] = None
+    n3_segment: Optional[List[N3Segment]] = None
     n4_segment: Optional[N4Segment] = None
     per_segment: Optional[List[BenefitEnrollmentPerSegment]] = None
     pla_segment: Optional[Loop2310PlaSegment] = None
@@ -321,9 +321,9 @@ class Loop2000(X12SegmentGroup):
     loop_2100b: Optional[Loop2100B] = None
     loop_2100c: Optional[Loop2100C] = None
     loop_2100d: Optional[List[Loop2100D]] = Field(None, max_length=3)
-    loop_2100e: Optional[Loop2100E] = None
+    loop_2100e: Optional[List[Loop2100E]] = None
     loop_2100f: Optional[Loop2100F] = None
-    loop_2100g: Optional[Loop2100G] = None
+    loop_2100g: Optional[List[Loop2100G]] = None
     loop_2100h: Optional[Loop2100H] = None
     loop_2200: Optional[List[Loop2200]] = None
     loop_2300: Optional[List[Loop2300]] = None

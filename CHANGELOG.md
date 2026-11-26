@@ -24,6 +24,34 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Changed — breaking
+
+| field | before | after |
+|---|---|---|
+| 835 `Footer.plb_segment` | `Optional[PlbSegment]` | `Optional[List[PlbSegment]]` |
+| 834 `Loop2000.loop_2100e`, `loop_2100g` | `Optional[Loop]` | `Optional[List[Loop]]` |
+| 834 `Loop2310.n3_segment` | `Optional[N3Segment]` | `Optional[List[N3Segment]]` |
+
+```python
+# before
+footer.plb_segment.adjustment_reason_code_1
+
+# after
+footer.plb_segment[0].adjustment_reason_code_1
+```
+
+Code that builds these in Python passes a list; a single instance is not
+wrapped. A segment that is absent from an 834 2310 loop is now `[]`, not
+`None`. Written output is unchanged.
+
+### Fixed
+- An 835 with more than one `PLB` no longer fails validation.
+- An 835 with no claims (a payment-only or provider-adjustment-only file) now
+  validates: `loop_2000` defaults to an empty list.
+- An 834 with several 2700 reporting categories (the second used to overwrite
+  the first), several 2100E or 2100G loops, or two address lines in 2310 no
+  longer fails or loses data.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added

@@ -255,7 +255,7 @@ def build_835(
         footer_fields["plb_segment"] = plb.model_dump()
     placeholder = dict(structure, footer=footer_fields)
     structure["footer"] = Footer(
-        plb_segment=plb,
+        plb_segment=[plb] if plb is not None else None,
         se_segment=SeSegment(
             transaction_segment_count=count_segments(placeholder),
             transaction_set_control_number=control_number,

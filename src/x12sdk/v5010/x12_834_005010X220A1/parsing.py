@@ -288,10 +288,14 @@ def set_member_2100d_to_2100g_loop(
     else:
         raise ValueError(f"Unable to parse entity identifier {entity_identifier}")
 
-    if loop_name == TransactionLoops.MEMBER_EMPLOYER:
-        # Loop 2100D repeats: a member may list up to three employers, and
-        # the model declares it List[Loop2100D]. Assigning here kept only the
-        # last one. The other three entity loops occur once and stay dicts.
+    if loop_name in (
+        TransactionLoops.MEMBER_EMPLOYER,
+        TransactionLoops.MEMBER_SCHOOL,
+        TransactionLoops.MEMBER_RESPONSIBLE_PERSON,
+    ):
+        # Loops 2100D, 2100E and 2100G repeat, and the models declare them as
+        # lists. Assigning here kept only the last occurrence. Loop 2100F
+        # occurs once and stays a dict.
         member_loop.setdefault(loop_name, []).append({})
         context.set_loop_context(loop_name, member_loop[loop_name][-1])
     else:
@@ -384,7 +388,7 @@ def set_provider_information_loop(
         coverage[TransactionLoops.MEMBER_COVERAGE_PROVIDER_INFORMATION] = []
 
     coverage[TransactionLoops.MEMBER_COVERAGE_PROVIDER_INFORMATION].append(
-        {"per_segment": []}
+        {"per_segment": [], "n3_segment": []}
     )
 
     provider_information = coverage[
@@ -469,9 +473,12 @@ def set_member_reporting_categories_loop(
     :param segment_data: The current segment's data
     """
 
+    # After the N1 of a category the context is loop 2750, so a further LX
+    # (the next occurrence of loop 2700) arrives from there as well.
     if context.loop_name not in (
         TransactionLoops.MEMBER_LEVEL_DETAIL,
         TransactionLoops.MEMBER_REPORTING_CATEGORIES,
+        TransactionLoops.MEMBER_REPORTING_CATEGORY,
     ):
         return
 

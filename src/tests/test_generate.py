@@ -288,7 +288,7 @@ def test_provider_adjustments_parse_back_and_round_trip(tmp_path):
     x12 = generate_835(seed=4, claims=3, provider_adjustments=2)
     plb = _read(x12)[0].footer.plb_segment
     assert plb is not None
-    assert plb.adjustment_reason_code_2 is not None
+    assert plb[0].adjustment_reason_code_2 is not None
     path = tmp_path / "plb.835"
     path.write_text(x12)
     assert_eq_model(str(path))

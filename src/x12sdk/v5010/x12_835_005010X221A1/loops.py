@@ -209,5 +209,5 @@ class Footer(X12SegmentGroup):
     Transaction Footer Information
     """
 
-    plb_segment: Optional[PlbSegment] = None
+    plb_segment: Optional[List[PlbSegment]] = None
     se_segment: SeSegment
