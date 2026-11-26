@@ -128,11 +128,13 @@ def build_270(
             n3_segment=n3_segment,
             n4_segment=n4_segment,
             dmg_segment=_demographics(values, dependent=False),
-            dtp_segment=inquiry_segments.Loop2100DtpSegment(
-                date_time_qualifier="291",
-                date_time_period_format_qualifier="D8",
-                date_time_period=created.strftime("%Y%m%d"),
-            ),
+            dtp_segment=[
+                inquiry_segments.Loop2100DtpSegment(
+                    date_time_qualifier="291",
+                    date_time_period_format_qualifier="D8",
+                    date_time_period=created.strftime("%Y%m%d"),
+                )
+            ],
             loop_2110c=None if member.dependent else eligibility,
         )
 
@@ -168,11 +170,13 @@ def build_270(
                         n3_segment=dependent_n3,
                         n4_segment=dependent_n4,
                         dmg_segment=_demographics(values, dependent=True),
-                        dtp_segment=inquiry_segments.Loop2100DtpSegment(
-                            date_time_qualifier="291",
-                            date_time_period_format_qualifier="D8",
-                            date_time_period=created.strftime("%Y%m%d"),
-                        ),
+                        dtp_segment=[
+                            inquiry_segments.Loop2100DtpSegment(
+                                date_time_qualifier="291",
+                                date_time_period_format_qualifier="D8",
+                                date_time_period=created.strftime("%Y%m%d"),
+                            )
+                        ],
                         loop_2110d=[
                             inquiry_loops.Loop2110D(
                                 eq_segment=inquiry_segments.Loop2110EqSegment(

@@ -24,6 +24,35 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Changed — breaking
+
+| field | before | after |
+|---|---|---|
+| 270 `Loop2100C.dtp_segment`, `Loop2100D.dtp_segment` | `Optional[Loop2100DtpSegment]` | `Optional[List[Loop2100DtpSegment]]` (max 9) |
+| 271 `Loop2110C`, `Loop2110D` | `ls_segment`, `loop_2120c`/`loop_2120d`, `le_segment` | `ls_loop_2120c`/`ls_loop_2120d`: `Optional[List[Loop2120CBlock]]`/`Optional[List[Loop2120DBlock]]` |
+
+Each 271 LS to LE envelope is now one block holding its `ls_segment`, its
+2120 loops and its `le_segment`:
+
+```python
+# before
+loop_2110c.loop_2120c[0].nm1_segment
+
+# after
+loop_2110c.ls_loop_2120c[0].loop_2120c[0].nm1_segment
+```
+
+A 270 2100 loop with no `DTP` now has `[]`, not `None`. Code that builds these
+in Python passes lists. Written output is unchanged for valid input.
+
+A `DTP`, `REF` or `MSG` placed after `LE` in a 271 (an order violation) used to
+be moved before the `LS`; it is now reported as an SE segment-count mismatch.
+
+### Fixed
+- A 271 with two benefit-related entities (`NM1`) in one 2120 loop, or two
+  LS to LE envelopes in one 2110, no longer fails.
+- A 270 with two `DTP` segments in 2100C or 2100D no longer fails.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added

@@ -100,7 +100,9 @@ class Loop2100D(X12SegmentGroup):
     dmg_segment: Optional[DmgSegment] = None
     ins_segment: Optional[Loop2100DInsSegment] = None
     hi_segment: Optional[HiSegment] = None
-    dtp_segment: Optional[Loop2100DtpSegment] = None
+    dtp_segment: Optional[List[Loop2100DtpSegment]] = Field(
+        None, min_length=0, max_length=9
+    )
     # EQ repeats within loop 2110, up to 99 times: one inquiry may ask about
     # several service types. min_length=1 keeps the loop required, as the
     # implementation guide has it for a dependent, while allowing repeats.
@@ -148,7 +150,9 @@ class Loop2100C(X12SegmentGroup):
     dmg_segment: Optional[DmgSegment] = None
     ins_segment: Optional[Loop2100CInsSegment] = None
     hi_segment: Optional[HiSegment] = None
-    dtp_segment: Optional[Loop2100DtpSegment] = None
+    dtp_segment: Optional[List[Loop2100DtpSegment]] = Field(
+        None, min_length=0, max_length=9
+    )
     # repeats, as loop_2110d does; optional because a subscriber may appear
     # only to carry a dependent whose eligibility is being asked about
     loop_2110c: Optional[List[Loop2110C]] = Field(None, min_length=0)

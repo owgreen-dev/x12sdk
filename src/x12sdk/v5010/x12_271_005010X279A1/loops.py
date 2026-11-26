@@ -104,6 +104,19 @@ class Loop2115D(X12SegmentGroup):
     le_segment: LeSegment
 
 
+class Loop2120DBlock(X12SegmentGroup):
+    """
+    One LS to LE envelope of Loop 2120D (Dependent Benefit Related Entity Name).
+
+    The envelope can occur more than once within a 2110 loop, and each
+    envelope holds its own repeating 2120 loops.
+    """
+
+    ls_segment: Optional[LsSegment] = None
+    loop_2120d: Optional[List[Loop2120D]] = Field(None, min_length=0, max_length=23)
+    le_segment: Optional[LeSegment] = None
+
+
 class Loop2110D(X12SegmentGroup):
     """
     Loop 2110D Dependent Eligibility or Benefit Information
@@ -122,9 +135,7 @@ class Loop2110D(X12SegmentGroup):
     )
     msg_segment: Optional[List[MsgSegment]] = Field(None, min_length=0, max_length=10)
     loop_2115d: Optional[List[Loop2115D]] = Field(None, min_length=0, max_length=10)
-    ls_segment: Optional[LsSegment] = None
-    loop_2120d: Optional[List[Loop2120D]] = Field(None, min_length=0, max_length=23)
-    le_segment: Optional[LeSegment] = None
+    ls_loop_2120d: Optional[List[Loop2120DBlock]] = Field(None, min_length=0)
 
     _validate_ref_segments = model_validator(mode="after")(validate_duplicate_ref_codes)
 
@@ -190,6 +201,19 @@ class Loop2115C(X12SegmentGroup):
     le_segment: LeSegment
 
 
+class Loop2120CBlock(X12SegmentGroup):
+    """
+    One LS to LE envelope of Loop 2120C (Subscriber Benefit Related Entity Name).
+
+    The envelope can occur more than once within a 2110 loop, and each
+    envelope holds its own repeating 2120 loops.
+    """
+
+    ls_segment: Optional[LsSegment] = None
+    loop_2120c: Optional[List[Loop2120C]] = Field(None, min_length=0, max_length=23)
+    le_segment: Optional[LeSegment] = None
+
+
 class Loop2110C(X12SegmentGroup):
     """
     Loop2110C - Subscriber Eligibility or Benefit Information
@@ -208,9 +232,7 @@ class Loop2110C(X12SegmentGroup):
     )
     msg_segment: Optional[List[MsgSegment]] = Field(None, min_length=0, max_length=10)
     loop_2115c: Optional[List[Loop2115C]] = Field(None, min_length=0, max_length=10)
-    ls_segment: Optional[LsSegment] = None
-    loop_2120c: Optional[List[Loop2120C]] = Field(None, min_length=0, max_length=23)
-    le_segment: Optional[LeSegment] = None
+    ls_loop_2120c: Optional[List[Loop2120CBlock]] = Field(None, min_length=0)
 
     _validate_ref_segments = model_validator(mode="after")(validate_duplicate_ref_codes)
 

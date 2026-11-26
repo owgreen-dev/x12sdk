@@ -29,11 +29,13 @@ class TransactionLoops(str, Enum):
     SUBSCRIBER_NAME = "loop_2100c"
     SUBSCRIBER_ELIGIBILITY = "loop_2110c"
     SUBSCRIBER_ADDITIONAL_ELIGIBILITY = "loop_2115c"
+    SUBSCRIBER_RELATED_BENEFIT_BLOCK = "ls_loop_2120c"
     SUBSCRIBER_RELATED_BENEFIT_NAME = "loop_2120c"
     DEPENDENT = "loop_2000d"
     DEPENDENT_NAME = "loop_2100d"
     DEPENDENT_ELIGIBILITY = "loop_2110d"
     DEPENDENT_ADDITIONAL_ELIGIBILITY = "loop_2115d"
+    DEPENDENT_RELATED_BENEFIT_BLOCK = "ls_loop_2120d"
     DEPENDENT_RELATED_BENEFIT_NAME = "loop_2120d"
     FOOTER = "footer"
 
@@ -70,6 +72,31 @@ def _get_eligibility(context) -> Dict:
         eligibility_loop = TransactionLoops.DEPENDENT_ELIGIBILITY
 
     return context.patient_record[name_loop][eligibility_loop][-1]
+
+
+def _related_entity_loop_names(context):
+    """Returns the (block, name) loop names for the current member's 2120 loops"""
+    if _is_subscriber_patient(context):
+        return (
+            TransactionLoops.SUBSCRIBER_RELATED_BENEFIT_BLOCK,
+            TransactionLoops.SUBSCRIBER_RELATED_BENEFIT_NAME,
+        )
+    return (
+        TransactionLoops.DEPENDENT_RELATED_BENEFIT_BLOCK,
+        TransactionLoops.DEPENDENT_RELATED_BENEFIT_NAME,
+    )
+
+
+def _current_related_entity_block(context) -> Dict:
+    """
+    Returns the open LS to LE envelope of the current eligibility record,
+    opening one when a 2120 loop or LE arrives with no LS before it.
+    """
+    block_loop, _ = _related_entity_loop_names(context)
+    blocks = _get_eligibility(context).setdefault(block_loop, [])
+    if not blocks:
+        blocks.append({})
+    return blocks[-1]
 
 
 @match("ST")
@@ -265,20 +292,16 @@ def set_additional_benefit_loop(context: X12ParserContext, segment_data: Dict) -
 @match("LS")
 def set_loop_header_loop(context: X12ParserContext, segment_data: Dict) -> None:
     """
-    Resets the loop context to the Eligibility Loop 2120C/D (Subscriber and Dependent)
-    The LS segment precedes the Subscriber/Dependent Benefit Related Entity Name
+    Opens an LS to LE envelope that holds the Subscriber/Dependent Benefit Related Entity Name loops (2120C/D).
+    The envelope can occur more than once within one eligibility loop, so each LS appends a new one.
 
     :param context: The X12Parsing context which contains the current loop and transaction record.
     :param segment_data: The current segment's data
     """
-    eligibility = _get_eligibility(context)
-
-    if _is_subscriber_patient(context):
-        loop_name = TransactionLoops.SUBSCRIBER_ELIGIBILITY
-    else:
-        loop_name = TransactionLoops.DEPENDENT_ELIGIBILITY
-
-    context.set_loop_context(loop_name, eligibility)
+    block_loop, _ = _related_entity_loop_names(context)
+    blocks = _get_eligibility(context).setdefault(block_loop, [])
+    blocks.append({})
+    context.set_loop_context(block_loop, blocks[-1])
 
 
 @match("NM1")
@@ -287,49 +310,46 @@ def set_benefit_related_entity_loop(
 ) -> None:
     """
     Supports the Benefit Related Entity Name Loop for the Subscriber (2120C) and Dependent (2120D).
+    Loop 2120 repeats, so an NM1 can arrive while the context is already in the envelope or in an earlier 2120 loop.
 
     :param context: The X12Parsing context which contains the current loop and transaction record.
     :param segment_data: The current segment's data
     """
+    block_loop, benefit_related_entity_loop = _related_entity_loop_names(context)
+
     if context.loop_name not in (
         TransactionLoops.DEPENDENT_ELIGIBILITY,
         TransactionLoops.SUBSCRIBER_ELIGIBILITY,
+        block_loop,
+        benefit_related_entity_loop,
     ):
         return
 
-    if _is_subscriber_patient(context):
-        benefit_related_entity_loop = TransactionLoops.SUBSCRIBER_RELATED_BENEFIT_NAME
-    else:
-        benefit_related_entity_loop = TransactionLoops.DEPENDENT_RELATED_BENEFIT_NAME
+    block = _current_related_entity_block(context)
 
-    eligibility = _get_eligibility(context)
+    if benefit_related_entity_loop not in block:
+        block[benefit_related_entity_loop] = []
 
-    if benefit_related_entity_loop not in eligibility:
-        eligibility[benefit_related_entity_loop] = []
-
-    eligibility[benefit_related_entity_loop].append(
+    block[benefit_related_entity_loop].append(
         {
             "per_segment": [],
         }
     )
 
-    benefit_related_entity = eligibility[benefit_related_entity_loop][-1]
+    benefit_related_entity = block[benefit_related_entity_loop][-1]
     context.set_loop_context(benefit_related_entity_loop, benefit_related_entity)
 
 
 @match("LE")
 def set_loop_footer_loop(context: X12ParserContext, segment_data: Dict) -> None:
     """
-    Ensures that the Loop Footer Segment is written to the Member (Subscriber or Dependent)
+    Ensures that the Loop Footer Segment is written to the open LS to LE envelope of the Member
+    (Subscriber or Dependent)
     :param context: The X12Parsing context which contains the current loop and transaction record.
     :param segment_data: The current segment's data
     """
-    eligibility = _get_eligibility(context)
-
-    if _is_subscriber_patient(context):
-        context.set_loop_context(TransactionLoops.SUBSCRIBER_ELIGIBILITY, eligibility)
-    else:
-        context.set_loop_context(TransactionLoops.DEPENDENT_ELIGIBILITY, eligibility)
+    block_loop, _ = _related_entity_loop_names(context)
+    context.set_loop_context(block_loop, _current_related_entity_block(context))
 
 
 @match("HL", {"hierarchical_level_code": "23"})
