@@ -24,6 +24,21 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Fixed
+- **271: well-formed AAA03, AAA04 and EB03 code values are accepted.** These
+  fields were limited to fixed lists, one copy per loop for AAA03 and AAA04,
+  so a valid code outside a list (for example `72` or `73` in AAA03, `A8` in
+  EB03) failed the whole transaction. Each list is now defined once, in
+  `x12sdk.v5010.code_tables`, and gains `72` and `73` (AAA03) and `A8` (EB03).
+  AAA03 and AAA04 also accept any other value of the right length. EB03 on
+  the 271 and EQ01 on the 270 (the same service type code) accept any
+  non-empty string, in any repetition, including values longer than two
+  characters and an empty repetition (`30^`, `2^^30`), and the file
+  serializes back byte for byte; an element empty throughout is still
+  rejected. Parsed values are plain strings, unchanged from the released
+  version. Inputs rejected before are accepted; nothing accepted before
+  changes, and the nested enum names on the segment classes still resolve.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added

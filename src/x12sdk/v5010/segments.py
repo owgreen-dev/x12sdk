@@ -9,7 +9,7 @@ and overriden as necessary to support a transaction's specific validation and us
 import datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
+from typing import Annotated, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from pydantic import (
     Field,
@@ -22,6 +22,7 @@ from pydantic import (
 
 from x12sdk.models import X12Delimiters, X12Segment, X12SegmentName
 from x12sdk.support import parse_interchange_date, parse_x12_date
+from x12sdk.v5010 import code_tables
 from x12sdk.validators import validate_date_field
 
 
@@ -954,196 +955,9 @@ class EbSegment(X12Segment):
         SPOUSE_AND_CHILDREN = "SPC"
         SPOUSE_ONLY = "SPO"
 
-    class ServiceTypeCode(str, Enum):
-        """
-        Code values for EB03
-        """
-
-        MEDICAL_CARE = "1"
-        SURGICAL = "2"
-        CONSULTATION = "3"
-        DIAGNOSTIC_X_RAY = "4"
-        DIAGNOSTIC_LAB = "5"
-        RADIATION_THERAPY = "6"
-        ANESTHESIA = "7"
-        SURGICAL_ASSISTANCE = "8"
-        OTHER_MEDICAL = "9"
-        BLOOD_CHARGES = "10"
-        USED_DURABLE_MEDICAL_EQUIPMENT = "11"
-        DURABLE_MEDICAL_EQUIPMENT_PURCHASE = "12"
-        AMBULATORY_SERVICE_CENTER_FACILITY = "13"
-        RENAL_SUPPLIES_IN_THE_HOME = "14"
-        ALTERNATE_METHOD_DIALYSIS = "15"
-        CHRONIC_RENAL_DISEASE_EQUIPMENT = "16"
-        PRE_ADMISSION_TESTING = "17"
-        DURABLE_MEDICAL_EQUIPMENT_RENTAL = "18"
-        PNEUMONIA_VACCINE = "19"
-        SECOND_SURGICAL_OPINION = "20"
-        THIRD_SURGICAL_OPINION = "21"
-        SOCIAL_WORK = "22"
-        DIAGNOSTIC_DENTAL = "23"
-        PERIODONTICS = "24"
-        RESTORATIVE = "25"
-        ENDODONTICS = "26"
-        MAXILLOFACIAL_PROSTHETICS = "27"
-        ADJUNCTIVE_DENTAL_SERVICES = "28"
-        HEALTH_BENEFIT_PLAN_COVERAGE = "30"
-        PLAN_WAITING_PERIOD = "32"
-        CHIROPRACTIC = "33"
-        CHIROPRACTIC_OFFICE_VISITS = "34"
-        DENTAL_CARE = "35"
-        DENTAL_CROWNS = "36"
-        DENTAL_ACCIDENT = "37"
-        ORTHODONTICS = "38"
-        PROSTHODONTICS = "39"
-        ORAL_SURGERY = "40"
-        ROUTINE_PREVENTIVE_DENTAL = "41"
-        HOME_HEALTH_CARE = "42"
-        HOME_HEALTH_PRESCRIPTIONS = "43"
-        HOME_HEALTH_VISITS = "44"
-        HOSPICE = "45"
-        RESPITE_CARE = "46"
-        HOSPITAL = "47"
-        HOSPITAL_INPATIENT = "48"
-        HOSPITAL_ROOM_AND_BOARD = "49"
-        HOSPITAL_OUTPATIENT = "50"
-        HOSPITAL_EMERGENCY_ACCIDENT = "51"
-        HOSPITAL_EMERGENCY_MEDICAL = "52"
-        HOSPITAL_AMBULATORY_SURGICAL = "53"
-        LONG_TERM_CARE = "54"
-        MAJOR_MEDICAL = "55"
-        MEDICALLY_RELATED_TRANSPORTATION = "56"
-        AIR_TRANSPORTATION = "57"
-        CABULANCE = "58"
-        LICENSED_AMBULANCE = "59"
-        GENERAL_BENEFITS = "60"
-        INVITRO_FERTILIZATION = "61"
-        MRI_CAT_SCAN = "62"
-        DONOR_PROCEDURE = "63"
-        ACUPUNCTURE = "64"
-        NEWBORN_CARE = "65"
-        PATHOLOGY = "66"
-        SMOKING_CESSATION = "67"
-        WELL_BABY_CARE = "68"
-        MATERNITY = "69"
-        TRANSPLANTS = "70"
-        AUDIOLOGY_EXAM = "71"
-        INHALATION_THERAPY = "72"
-        DIAGNOSTIC_MEDICAL = "73"
-        PRIVATE_DUTY_NURSING = "74"
-        PROSTHETIC_DEVICE = "75"
-        DIALYSIS = "76"
-        OTOLOGICAL_EXAM = "77"
-        CHEMOTHERAPY = "78"
-        ALLERGY_TESTING = "79"
-        IMMUNIZATIONS = "80"
-        ROUTINE_PHYSICAL = "81"
-        FAMILY_PLANNING = "82"
-        INFERTILITY = "83"
-        ABORTION = "84"
-        AIDS = "85"
-        EMERGENCY_SERVICES = "86"
-        CANCER = "87"
-        PHARMACY = "88"
-        FREE_STANDING_PRESCRIPTION_DRUG = "89"
-        MAIL_ORDER_PRESCRIPTION_DRUG = "90"
-        BRAND_NAME_PRESCRIPTION_DRUG = "91"
-        GENERIC_PRESCRIPTION_DRUG = "92"
-        PDDIATRY = "93"
-        PDDIATRY_NURSING_HOME_VISITS = "94"
-        PROFESSIONAL_PHYSICIAN = "96"
-        ANESTHESIOLOGIST = "97"
-        PROFESSIONAL_PHYSICIAN_VISIT_OFFICE = "98"
-        PROFESSIONAL_PHYSICIAN_VISIT_INPATIENT = "99"
-        PROFESSIONAL_PHYSICIAN_VISIT_OUTPATIENT = "99"
-        PROFESSIONAL_PHYSICIAN_VISIT_NURSING_HOME = "A1"
-        PROFESSIONAL_PHYSICIAN_VISIT_SKILLED_NURSING_FACILITY = "A2"
-        PROFESSIONAL_PHYSICIAN_VISIT_HOME_PSYCHIATRIC = "A3"
-        PSYCHIATRIC_ROOM_AND_BOARD = "A4"
-        PSYCHOTHERAPY = "A5"
-        PSYCHIATRIC_INPATIENT = "A6"
-        PSYCHIATRIC_OUTPATIENT = "A7"
-        REHABILITATION = "A9"
-        REHABILITATION_ROOM_AND_BOARD = "AA"
-        REHABILITATION_INPATIENT = "AB"
-        REHABILITATION_OUTPATIENT = "AC"
-        OCCUPATIONAL_THERAPY = "AD"
-        PHYSICAL_MEDICINE = "AE"
-        SPEECH_THERAPY = "AF"
-        SKILLED_NURSING_CARE = "AG"
-        SKILLED_NURSING_CARE_ROOM_AND_BOARD = "AH"
-        SUBSTANCE_ABUSE = "AI"
-        ALCOHOLISM = "AJ"
-        DRUG_ADDICTION = "AK"
-        VISION_OPTOMETRY = "AL"
-        FRAMES = "AM"
-        ROUTINE_VISION_EXAM = "AN"
-        LENSES = "AO"
-        NONMEDICALLY_NECESSARY_PHYSICAL = "AQ"
-        EXPERIMENTAL_DRUG_THERAPY = "AR"
-        BURN_CARE = "B1"
-        BRAND_NAME_PRESCRIPTION_DRUG_FORMULARY = "B2"
-        BRAND_NAME_PRESCRIPTION_DRUG_NON_FORMULARY = "B3"
-        INDEPENDENT_MEDICAL_EVALUATION = "BA"
-        PARTIAL_HOSPITALIZATION_PSYCHIATRIC = "BB"
-        DAY_CARE_PSYCHIATRIC = "BC"
-        COGNITIVE_THERAPY = "BD"
-        MASSAGE_THERAPY = "BE"
-        PULMONARY_REHABILITATION = "BF"
-        CARDIAC_REHABILITATION = "BG"
-        PEDIATRIC = "BH"
-        NURSERY = "BI"
-        SKIN = "BJ"
-        ORTHOPEDIC = "BK"
-        CARDIAC = "BL"
-        LYMPHATIC = "BM"
-        GASTROINTESTINAL = "BN"
-        ENDOCRINE = "BP"
-        NEUROLOGY = "BQ"
-        EYE = "BR"
-        INVASIVE_PROCEDURE = "BS"
-        GYNECOLOGICAL = "BT"
-        OBSTETRICAL = "BU"
-        OBSTETRICAL_GYNECOLOGICAL = "BV"
-        MAIL_ORDER_PRESCRIPTION_DRUG_BRAND_NAME = "BW"
-        MAIL_ORDER_PRESCRIPTION_DRUG_GENERIC = "BX"
-        PHYSICIAN_VISIT_OFFICE_SICK = "BY"
-        PHYSICIAN_VISIT_OFFICE_WELL = "BZ"
-        CORONARY_CARE = "C1"
-        PRIVATE_DUTY_NURSING_INPATIENT = "CA"
-        PRIVATE_DUTY_NURSING_HOME = "CB"
-        SURGICAL_BENEFITS_PROFESSIONAL_PHYSICIAN = "CC"
-        SURGICAL_BENEFITS_FACILITY = "CD"
-        MENTAL_HEALTH_PROVIDER_INPATIENT = "CE"
-        MENTAL_HEALTH_PROVIDER_OUTPATIENT = "CF"
-        MENTAL_HEALTH_FACILITY_INPATIENT = "CG"
-        MENTAL_HEALTH_FACILITY_OUTPATIENT = "CH"
-        SUBSTANCE_ABUSE_FACILITY_INPATIENT = "C1"
-        SUBSTANCE_ABUSE_FACILITY_OUTPATIENT = "C2"
-        SCREENING_X_RAY = "CK"
-        SCREENING_LABORATORY = "CL"
-        MAMMOGRAM_HIGH_RISK_PATIENT = "CM"
-        MAMMOGRAM_LOW_RISK_PATIENT = "CN"
-        FLU_VACCINATION = "CO"
-        EYEWEAR_AND_EYEWEAR_ACCESSORIES = "CP"
-        CASE_MANAGEMENT = "CQ"
-        DERMATOLOGY = "DG"
-        DURABLE_MEDICAL_EQUIPMENT = "DM"
-        DIABETIC_SUPPLIES = "DS"
-        GENERIC_PRESCRIPTION_DRUG_FORMULARY = "GF"
-        GENERIC_PRESCRIPTION_DRUG_NON_FORMULARY = "GN"
-        ALLERGY = "GY"
-        INTENSIVE_CARE = "IC"
-        MENTAL_HEALTH = "MH"
-        NEONATAL_INTENSIVE_CARE = "NI"
-        ONCOLOGY = "ON"
-        PHYSICAL_THERAPY = "PT"
-        PULMONARY = "PU"
-        RENAL = "RN"
-        RESIDENTIAL_PSYCHIATRIC_TREATMENT = "RT"
-        TRANSITIONAL_CARE = "TC"
-        TRANSITION_NURSERY_CARE = "TN"
-        URGENT_CARE = "UC"
+    ServiceTypeCode: ClassVar[type[code_tables.ServiceTypeCode]] = (
+        code_tables.ServiceTypeCode
+    )
 
     class InsuranceTypeCode(str, Enum):
         """
@@ -1267,7 +1081,7 @@ class EbSegment(X12Segment):
     segment_name: X12SegmentName = X12SegmentName.EB
     eligibility_benefit_information: EligibilityBenefitInformationCode
     coverage_level_code: Optional[CoverageLevelCode] = None
-    service_type_code: Optional[List[ServiceTypeCode]] = None
+    service_type_code: Optional[List[code_tables.ServiceTypeField]] = None
     insurance_type_code: Optional[InsuranceTypeCode] = None
     plan_coverage_description: Optional[str] = None
     time_period_qualifier: Optional[TimePeriodQualifier] = None
@@ -1284,6 +1098,10 @@ class EbSegment(X12Segment):
     )
     diagnosis_code_pointer: Optional[List[str]] = Field(
         None, json_schema_extra={"is_component": True}
+    )
+
+    _validate_service_type_code = field_validator("service_type_code")(
+        code_tables.check_service_type_codes
     )
 
     @model_validator(mode="after")

@@ -5,10 +5,11 @@ Specialized segment models for the Eligibility 270 005010X279A1 transaction.
 """
 
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Union
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
+from x12sdk.v5010.code_tables import check_service_type_codes
 from x12sdk.v5010.segments import (
     AmtSegment,
     BhtSegment,
@@ -500,7 +501,13 @@ class Loop2110EqSegment(EqSegment):
         TRANSITIONAL_NURSERY_CARE = "TN"
         URGENT_CARE = "UC"
 
-    service_type_code: List[ServiceTypeCode]
+    # The nested enum keeps its member names; any other string is accepted too
+    # (see code_tables.ServiceTypeField), and an empty repetition is kept.
+    service_type_code: List[Union[ServiceTypeCode, str]]
+
+    _validate_service_type_code = field_validator("service_type_code")(
+        check_service_type_codes
+    )
 
 
 class Loop2110AmtSegment(AmtSegment):

@@ -5,10 +5,11 @@ Specialized segment models for the Eligibility 271 005010X279A1 transaction.
 """
 
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import ClassVar, List, Literal, Optional
 
 from pydantic import Field
 
+from x12sdk.v5010 import code_tables
 from x12sdk.v5010.segments import (
     AaaSegment,
     AmtSegment,
@@ -72,30 +73,15 @@ class Loop2000AAaaSegment(AaaSegment):
     Loop 2000A AAA Segment adjusted for Information Source Usage
     """
 
-    class RejectReasonCode(str, Enum):
-        """
-        Code values for AAA03
-        """
+    RejectReasonCode: ClassVar[type[code_tables.RejectReasonCode]] = (
+        code_tables.RejectReasonCode
+    )
+    FollowUpActionCode: ClassVar[type[code_tables.FollowUpActionCode]] = (
+        code_tables.FollowUpActionCode
+    )
 
-        AUTHORIZED_QUANTITY_EXCEEDED = "04"
-        AUTHORIZATION_ACCESS_RESTRICTIONS = "41"
-        UNABLE_TO_RESPOND_AT_CURRENT_TIME = "42"
-        INVALID_PARTICIPANT_IDENTIFICATION = "79"
-
-    class FollowUpActionCode(str, Enum):
-        """
-        Code values for AAA04
-        """
-
-        PLEASE_CORRECT_AND_RESUBMIT = "C"
-        RESUBMISSION_NOT_ALLOWED = "N"
-        PLEASE_RESUBMIT_ORIGINAL_TRANSACTION = "P"
-        RESUBMISSION_ALLOWED = "R"
-        DO_NOT_RESUBMIT_INQUIRY_SENT_THIRD_PARTY = "S"
-        DO_NOT_RESUBMIT_WE_WILL_RESPOND = "Y"
-
-    reject_reason_code: RejectReasonCode
-    follow_up_action_code: FollowUpActionCode
+    reject_reason_code: code_tables.RejectReasonField
+    follow_up_action_code: code_tables.FollowUpActionField
 
 
 class Loop2100ANm1Segment(Nm1Segment):
@@ -166,37 +152,18 @@ class Loop2100APerSegment(PerSegment):
 
 class Loop2100AAaaSegment(AaaSegment):
     """
-    Loop 2100A AAA segment is overriden to support information source custom code table values
+    Loop 2100A AAA segment (Information Source Request Validation)
     """
 
-    class RejectReasonCode(str, Enum):
-        """
-        Code values for AAA03
-        """
+    RejectReasonCode: ClassVar[type[code_tables.RejectReasonCode]] = (
+        code_tables.RejectReasonCode
+    )
+    FollowUpActionCode: ClassVar[type[code_tables.FollowUpActionCode]] = (
+        code_tables.FollowUpActionCode
+    )
 
-        AUTHORIZED_QUANTITY_EXCEEDED = "04"
-        AUTHORIZATION_ACCESS_RESTRICTIONS = "41"
-        UNABLE_TO_RESPOND_AT_CURRENT_TIME = "42"
-        INVALID_PARTICIPANT_IDENTIFICATION = "79"
-        NO_RESPONSE_RECEIVED_TRANSACTION_TERMINATED = "80"
-        PAYER_NAME_OR_IDENTIFIER_MISSING = "T4"
-
-    class FollowUpActionCode(str, Enum):
-        """
-        Code values for AAA04
-        """
-
-        PLEASE_CORRECT_AND_RESUBMIT = "C"
-        RESUBMISSION_NOT_ALLOWED = "N"
-        PLEASE_RESUBMIT_ORIGINAL_TRANSACTION = "P"
-        RESUBMISSION_ALLOWED = "R"
-        DO_NOT_RESUBMIT_INQUIRY_SENT_THIRD_PARTY = "S"
-        DO_NOT_RESUBMIT_WE_WILL_RESPOND = "Y"
-        PLEASE_WAIT_30_DAYS_RESUBMIT = "W"
-        PLEASE_WAIT_10_DAYS_RESUBMIT = "X"
-
-    reject_reason_code: RejectReasonCode
-    follow_up_action_code: FollowUpActionCode
+    reject_reason_code: code_tables.RejectReasonField
+    follow_up_action_code: code_tables.FollowUpActionField
 
 
 class Loop2000BHlSegment(HlSegment):
@@ -279,40 +246,15 @@ class Loop2100BAaaSegment(AaaSegment):
     Information Receiver Request Validation
     """
 
-    class RejectReasonCode(str, Enum):
-        """
-        Code values for AAA03
-        """
+    RejectReasonCode: ClassVar[type[code_tables.RejectReasonCode]] = (
+        code_tables.RejectReasonCode
+    )
+    FollowUpActionCode: ClassVar[type[code_tables.FollowUpActionCode]] = (
+        code_tables.FollowUpActionCode
+    )
 
-        REQUIRED_APPLICATION_DATA_MISSING = "15"
-        AUTHORIZATION_ACCESS_RESTRICTIONS = "41"
-        INVALID_MISSING_PROVIDER_IDENTIFICATION = "43"
-        INVALID_MISSING_PROVIDER_NAME = "44"
-        INVALID_MISSING_PROVIDER_SPECIALITY = "45"
-        INVALID_MISSING_PROVIDER_PHONE_NUMBER = "46"
-        INVALID_MISSING_PROVIDER_PHONE_STATE = "47"
-        INVALID_MISSING_REFERRING_PROVIDER_ID_NUMBER = "48"
-        PROVIDER_INELIGIBLE_FOR_INQUIRIES = "50"
-        PROVIDER_NOT_ON_FILE = "51"
-        INVALID_PARTICIPANT_IDENTIFICATION = "79"
-        INVALID_OR_MISSING_PROVIDER_ADDRESS = "97"
-        PAYER_NAME_OR_IDENITIFER_MISSING = "T4"
-
-    class FollowUpActionCode(str, Enum):
-        """
-        Code values for AAA03
-        """
-
-        PLEASE_CORRECT_AND_RESUBMIT = "C"
-        RESUBMISSION_NOT_ALLOWED = "N"
-        RESUBMISSION_ALLOWED = "R"
-        DO_NOT_RESUBMIT_INQUIRY_SENT_THIRD_PARTY = "S"
-        PLEASE_WAIT_30_DAYS_RESUBMIT = "W"
-        PLEASE_WAIT_10_DAYS_RESUBMIT = "X"
-        DO_NOT_RESUBMIT_WE_WILL_RESPOND = "Y"
-
-    reject_reason_code: RejectReasonCode
-    follow_up_action_code: FollowUpActionCode
+    reject_reason_code: code_tables.RejectReasonField
+    follow_up_action_code: code_tables.FollowUpActionField
 
 
 class Loop2100BPrvSegment(PrvSegment):
@@ -504,50 +446,15 @@ class Loop2110CAaaSegment(AaaSegment):
     Loop 2110C AAA Segment supports member specific request validation code tables
     """
 
-    class RejectReasonCode(str, Enum):
-        """
-        Code values for AAA03
-        """
+    RejectReasonCode: ClassVar[type[code_tables.RejectReasonCode]] = (
+        code_tables.RejectReasonCode
+    )
+    FollowUpActionCode: ClassVar[type[code_tables.FollowUpActionCode]] = (
+        code_tables.FollowUpActionCode
+    )
 
-        REQUIRED_APPLICATION_DATA_MISSING = "15"
-        INPUT_ERRORS = "33"
-        SERVICE_DATES_NOT_WITHIN_PROVIDER_PLAN = "52"
-        INQUIRED_BENEFIT_INCONSISTENT_PROVIDER_TYPE = "53"
-        INAPPROPRIATE_PRODUCT_SERVICE_ID_QUALIFIER = "54"
-        INAPPROPRIATE_PRODUCT_SERVICE_ID = "55"
-        INAPPROPRIATE_DATE = "56"
-        INVALID_MISSING_DATES_OF_SERVICE = "57"
-        DATE_OF_BIRTH_FOLLOWS_DATE_OF_SERVICE = "60"
-        DATE_OF_DEATH_PRECEDES_DATE_OF_SERVICE = "61"
-        DATE_OF_SERVICE_NOT_WITHIN_ALLOWABLE_INQUIRY_PERIOD = "62"
-        DATE_OF_SERVICE_IN_FUTURE = "63"
-        INCONSISTENT_WITH_PATIENTS_AGE = "69"
-        INCONSISTENT_WITH_PATIENTS_GENDER = "70"
-        EXPERIMENTAL_SERVICE_OR_PROCEDURE = "98"
-        AUTHORIZATION_NUMBER_NOT_FOUND = "AA"
-        REQUIRES_PRIMARY_CARE_PHYSICIAN_AUTHORIZATION = "AE"
-        INVALID_MISSING_DIAGNOSIS_CODES = "AF"
-        INVALID_MISSING_PROCEDURE_CODES = "AG"
-        ADDITIONAL_PATIENT_CONDITION_INFORMATION_REQUIRED = "AO"
-        CERTIFICATION_INFORMATION_DOES_NOT_MATCH_PATIENT = "CI"
-        REQUIRES_MEDICAL_REVIEW = "E8"
-        INVALID_AUTHORIZATION_NUMBER_FORMAT = "IA"
-        MISSING_AUTHORIZATION_NUMBER = "MA"
-
-    class FollowUpActionCode(str, Enum):
-        """
-        Code values for AAA04
-        """
-
-        PLEASE_CORRECT_AND_RESUBMIT = "C"
-        RESUBMISSION_NOT_ALLOWED = "N"
-        RESUBMISSION_ALLOWED = "R"
-        PLEASE_WAIT_30_DAYS_RESUBMIT = "W"
-        PLEASE_WAIT_10_DAYS_RESUBMIT = "X"
-        DO_NOT_RESUBMIT_WE_WILL_RESPOND = "Y"
-
-    reject_reason_code: RejectReasonCode
-    follow_up_action_code: FollowUpActionCode
+    reject_reason_code: code_tables.RejectReasonField
+    follow_up_action_code: code_tables.FollowUpActionField
 
 
 class Loop2110EqSegment(EqSegment):
