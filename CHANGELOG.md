@@ -24,6 +24,29 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Changed — breaking
+
+| field | before | after |
+|---|---|---|
+| 276 and 277 `Loop2000C.loop_2100c` | `Loop2100C` | `List[Loop2100C]` (required, `min_length=1`) |
+
+```python
+# before
+loop_2000c.loop_2100c.nm1_segment
+
+# after
+loop_2000c.loop_2100c[0].nm1_segment
+```
+
+Code that builds this loop in Python passes a list. `claims()` and
+`TrackedClaim.provider_name` use the first occurrence. Written output is
+unchanged for one occurrence.
+
+### Fixed
+- A 276 or 277 with a second service-provider name loop (two `NM1*1P` in 2000C,
+  as sent for a provider identifier transition) no longer fails with a
+  list-versus-model error.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added

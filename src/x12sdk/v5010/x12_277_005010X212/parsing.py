@@ -205,9 +205,18 @@ def set_service_provider_name_loop(
     :param segment_data: The current segment data
     """
     if context.loop_name == TransactionLoops.SERVICE_PROVIDER_LEVEL:
-        context.loop_container[TransactionLoops.SERVICE_PROVIDER_NAME] = {}
-        loop_record = context.loop_container[TransactionLoops.SERVICE_PROVIDER_NAME]
-        context.set_loop_context(TransactionLoops.SERVICE_PROVIDER_NAME, loop_record)
+        service_provider = context.loop_container
+    elif context.loop_name == TransactionLoops.SERVICE_PROVIDER_NAME:
+        # A further name loop in the same service provider level (loop 2100C repeats).
+        service_provider = _get_service_provider(
+            context, context.hl_segment.get("hierarchical_id_number")
+        )
+    else:
+        return
+
+    service_provider.setdefault(TransactionLoops.SERVICE_PROVIDER_NAME, []).append({})
+    loop_record = service_provider[TransactionLoops.SERVICE_PROVIDER_NAME][-1]
+    context.set_loop_context(TransactionLoops.SERVICE_PROVIDER_NAME, loop_record)
 
 
 @match("TRN")

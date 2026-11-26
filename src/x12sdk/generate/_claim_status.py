@@ -233,15 +233,17 @@ def _build(
                                     hierarchical_level_code="19",
                                     hierarchical_child_code="1",
                                 ),
-                                loop_2100c=loops.Loop2100C(
-                                    nm1_segment=segments.Loop2100CNm1Segment(
-                                        entity_identifier_code="1P",
-                                        entity_type_qualifier="2",
-                                        name_last_or_organization_name=provider_name,
-                                        identification_code_qualifier="XX",
-                                        identification_code=values.npi(),
+                                loop_2100c=[
+                                    loops.Loop2100C(
+                                        nm1_segment=segments.Loop2100CNm1Segment(
+                                            entity_identifier_code="1P",
+                                            entity_type_qualifier="2",
+                                            name_last_or_organization_name=provider_name,
+                                            identification_code_qualifier="XX",
+                                            identification_code=values.npi(),
+                                        )
                                     )
-                                ),
+                                ],
                                 loop_2000d=subscribers,
                             )
                         ],

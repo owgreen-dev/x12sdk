@@ -505,7 +505,9 @@ class ClaimStatusAccess:
             for loop_2000b in loop_2000a.loop_2000b or []:
                 requester = loop_2000b.loop_2100b
                 for loop_2000c in loop_2000b.loop_2000c or []:
-                    provider = loop_2000c.loop_2100c
+                    # 2100C can repeat (an NPI transition lists the provider
+                    # twice); the first occurrence names the provider.
+                    provider = loop_2000c.loop_2100c[0]
                     for loop_2000d in loop_2000c.loop_2000d or []:
                         subscriber = loop_2000d.loop_2100d
                         context = {

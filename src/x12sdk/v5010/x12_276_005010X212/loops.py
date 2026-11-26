@@ -168,7 +168,7 @@ class Loop2000C(X12SegmentGroup):
     """
 
     hl_segment: Loop2000CHlSegment
-    loop_2100c: Loop2100C
+    loop_2100c: List[Loop2100C] = Field(min_length=1)
     loop_2000d: List[Loop2000D] = Field(min_length=1)
 
 
