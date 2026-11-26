@@ -32,6 +32,18 @@ class X12ParseException(Exception):
     pass
 
 
+def _field_equals(segment_data: Dict, field_name: str, expected: str) -> bool:
+    """
+    Case-insensitive equality of a parsed segment field against an expected value.
+
+    A segment that ends before the field, or leaves it empty, has no value for it
+    (the key is absent or None), so it is not equal to anything.
+    """
+
+    value = segment_data.get(field_name)
+    return value is not None and value.upper() == expected.upper()
+
+
 def match(segment_name: str, conditions: Dict = None) -> Callable:
     """
     The match decorator matches a X12 segment to a decorated function.
@@ -82,14 +94,15 @@ def match(segment_name: str, conditions: Dict = None) -> Callable:
                 return f(data_context, segment_data)
             else:
                 for k, v in conditions.items():
+                    # a field the segment does not carry, or carries empty, matches nothing
                     # evaluate "one of" matches
                     if isinstance(v, list):
                         for i in v:
-                            if segment_data[k].upper() == i.upper():
+                            if _field_equals(segment_data, k, i):
                                 return f(data_context, segment_data)
                     else:
                         # evaluate single matches
-                        if segment_data[k].upper() == v.upper():
+                        if _field_equals(segment_data, k, v):
                             return f(data_context, segment_data)
 
         return wrapped
@@ -315,7 +328,23 @@ class X12Parser(ABC):
             self._context.hl_segment = segment_data
 
         for loop_parser in self._loop_parsers[segment_name]:
-            loop_parser(segment_data, self._context)
+            try:
+                loop_parser(segment_data, self._context)
+            except (LookupError, TypeError, AttributeError) as e:
+                # A loop parser assumes the segments before this one built the
+                # loops it writes into. When the input breaks that assumption the
+                # parser fails with a bare KeyError, TypeError or AttributeError
+                # that names no segment. The cause is not asserted here: a defect
+                # in the parser on valid input would land here too.
+                hl_segment = self._context.hl_segment or {}
+                msg = (
+                    f"Could not place {segment_name} segment in the transaction; "
+                    f"the input is probably malformed. "
+                    f"Current loop: {self._context.loop_name}, "
+                    f"current HL: {hl_segment.get('hierarchical_id_number')}. "
+                    f"Original error: {type(e).__name__}: {e}"
+                )
+                raise X12ParseException(msg) from e
 
         segment_key = f"{segment_name.lower()}_segment"
 

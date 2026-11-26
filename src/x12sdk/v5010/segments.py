@@ -304,6 +304,10 @@ class BprSegment(X12Segment):
         """
         Validates the required fields for electronic transactions
         """
+        if not isinstance(values, dict):
+            # a repeated BPR segment arrives as a list
+            raise ValueError("BPR segment is repeated; it may appear only once")
+
         payment_code = values.get("payment_method_code")
 
         if payment_code not in ("ACH", "BOP", "FTW"):

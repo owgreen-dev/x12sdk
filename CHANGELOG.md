@@ -24,6 +24,17 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Fixed
+- **A file with a missing, repeated or misplaced segment, or a segment with an
+  empty first element, now fails with `X12ParseException`** instead of a bare
+  `KeyError`, `TypeError`, `AttributeError` or `LookupError`. The message names
+  the segment, the loop being built and the current HL, and includes the
+  original exception type and text. A repeated `BPR` in an 835 is reported as
+  a validation error saying the segment is repeated, instead of an
+  `AttributeError`. Behaviour
+  visible to users changed only for inputs that previously raised a raw
+  exception; valid files read and write exactly as before.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added
