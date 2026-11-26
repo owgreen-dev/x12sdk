@@ -276,7 +276,7 @@ def set_subscriber_payer_name_loop(
 
 
 @match(segment_name="NM1", conditions={"entity_identifier_code": "QD"})
-def set_subscriber_responsible_party_name(
+def set_subscriber_responsible_party_name_loop(
     context: X12ParserContext, segment_data: Dict
 ) -> None:
     """
@@ -298,7 +298,7 @@ def set_subscriber_responsible_party_name(
 
 
 @match(segment_name="NM1", conditions={"entity_identifier_code": "AO"})
-def set_subscriber_credit_debit_card_holder(
+def set_subscriber_credit_debit_card_holder_loop(
     context: X12ParserContext, segment_data: Dict
 ) -> None:
     """
@@ -497,6 +497,7 @@ def set_other_subscriber_name_loop(
             "FA",
             "LI",
             "TL",
+            "DQ",
         ]
     },
 )
@@ -539,6 +540,11 @@ def set_other_subscriber_entities_loop(
         elif identifier in ("77", "FA", "LI", "TL"):
             # loop 2330g
             loop_name = TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_SERVICE_FACILITY_LOCATION
+        elif identifier == "DQ":
+            # loop 2330h
+            loop_name = (
+                TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_SUPERVISING_PROVIDER
+            )
 
         if not loop_name:
             raise ValueError(

@@ -274,6 +274,17 @@ def set_member_2100d_to_2100g_loop(
     * Loop 2100F - Member Custodial Parent
     * Loop 2100G - Member Responsible Person
     """
+    # NM1*36 is also the qualifier of the COB related entity loop 2330. Every
+    # matching handler runs, in function-name order, and set_cob_related_entity_loop
+    # runs first and moves the context to 2330 (or finds it already in 2320 or 2330).
+    # The 2100D to 2100G loops precede the coverage, so a COB loop context means
+    # this segment belongs to 2330 and must not open a member entity loop.
+    if context.loop_name in (
+        TransactionLoops.MEMBER_COVERAGE_COB,
+        TransactionLoops.MEMBER_COVERAGE_COB_RELATED_ENTITY,
+    ):
+        return
+
     member_loop = _get_member(context)
 
     entity_identifier = segment_data.get("entity_identifier_code")

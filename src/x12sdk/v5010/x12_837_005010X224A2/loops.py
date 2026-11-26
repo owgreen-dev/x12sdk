@@ -87,6 +87,7 @@ from .segments import (
     Loop2010AaRefSegment,
     Loop2010AbNm1Segment,
     Loop2010AcNm1Segment,
+    Loop2010AcRefSegment,
     Loop2010BaNm1Segment,
     Loop2010BaPerSegment,
     Loop2010BbNm1Segment,
@@ -198,7 +199,7 @@ class Loop2010Ac(X12SegmentGroup):
     nm1_segment: Loop2010AcNm1Segment
     n3_segment: N3Segment
     n4_segment: N4Segment
-    ref_segment: List[Loop2010AaRefSegment] = Field(min_length=1, max_length=2)
+    ref_segment: List[Loop2010AcRefSegment] = Field(min_length=1, max_length=2)
 
 
 class Loop2010Ba(X12SegmentGroup):

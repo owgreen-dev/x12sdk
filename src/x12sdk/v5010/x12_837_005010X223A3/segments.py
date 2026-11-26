@@ -325,6 +325,7 @@ class Loop2010AcRefSegment(RefSegment):
         PAYER_IDENTIFICATION_NUMBER = "2U"
         CLAIM_OFFICE_NUMBER = "FY"
         NAIC_CODE = "NF"
+        EMPLOYERS_IDENTIFICATION_NUMBER = "EI"
 
     reference_identification_qualifier: ReferenceIdentificationQualifier
 

@@ -291,7 +291,7 @@ def set_subscriber_payer_name_loop(
 
 
 @match(segment_name="NM1", conditions={"entity_identifier_code": "QD"})
-def set_subscriber_responsible_party_name(
+def set_subscriber_responsible_party_name_loop(
     context: X12ParserContext, segment_data: Dict
 ) -> None:
     """
@@ -338,6 +338,12 @@ def set_patient_name_loop(context: X12ParserContext, segment_data: Dict) -> None
     :param context: The X12Parsing context which contains the current loop and transaction record.
     :param segment_data: The current segment data
     """
+    # NM1*QC also opens loop 2330C, Other Payer Patient Information, inside a
+    # COB 2320 loop. Every matching handler runs, so without this guard that QC
+    # replaced the dependent's own 2010CA name loop and reset the loop context.
+    if "loop_2320" in context.loop_name or "loop_2330" in context.loop_name:
+        return
+
     context.patient_record[TransactionLoops.PATIENT_LOOP_NAME] = {"ref_segment": []}
     patient_name_loop = context.patient_record[TransactionLoops.PATIENT_LOOP_NAME]
     context.set_loop_context(TransactionLoops.PATIENT_LOOP_NAME, patient_name_loop)
@@ -373,7 +379,7 @@ def set_claim_loop(context: X12ParserContext, segment_data: Dict) -> None:
 
 @match(
     "NM1",
-    conditions={"entity_identifier_code": ["71", "72", "73", "FA"]},
+    conditions={"entity_identifier_code": ["71", "72", "73", "FA", "77", "LI", "TL"]},
 )
 def set_claim_entity_loop(context: X12ParserContext, segment_data: Dict) -> None:
     """
@@ -398,7 +404,7 @@ def set_claim_entity_loop(context: X12ParserContext, segment_data: Dict) -> None
             loop_name = TransactionLoops.CLAIM_OPERATING_PHYSICIAN_NAME
         elif identifier == "73":
             loop_name = TransactionLoops.CLAIM_OTHER_PROVIDER_NAME
-        elif identifier == "FA":
+        elif identifier in ("FA", "77", "LI", "TL"):
             loop_name = TransactionLoops.CLAIM_SERVICE_FACILITY_LOCATION
 
         if not loop_name:
@@ -465,7 +471,7 @@ def set_other_subscriber_name_loop(
 
 @match(
     "NM1",
-    conditions={"entity_identifier_code": ["PR", "QC", "71", "72", "73"]},
+    conditions={"entity_identifier_code": ["PR", "QC", "71", "72", "73", "FA"]},
 )
 def set_other_subscriber_entities_loop(
     context: X12ParserContext, segment_data: Dict
@@ -506,7 +512,7 @@ def set_other_subscriber_entities_loop(
             )
         elif identifier == "FA":
             # loop 2330h
-            loop_name = TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_SERVICE_FACILITY_LOCATION
+            loop_name = TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_SERVICE_FACILITY_PROVIDER
 
         if not loop_name:
             raise ValueError(

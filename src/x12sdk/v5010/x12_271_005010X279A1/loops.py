@@ -308,6 +308,7 @@ class Loop2100A(X12SegmentGroup):
 
     nm1_segment: Loop2100ANm1Segment
     prv_segment: Optional[List[PrvSegment]] = Field(None, min_length=0, max_length=3)
+    per_segment: Optional[List[PerSegment]] = Field(None, min_length=0, max_length=3)
     aaa_segment: Optional[List[Loop2100AAaaSegment]] = Field(
         None, min_length=0, max_length=9
     )

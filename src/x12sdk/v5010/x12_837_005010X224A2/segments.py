@@ -326,10 +326,13 @@ class Loop2010AcRefSegment(RefSegment):
         Code values for REF01
         """
 
-        PAYER_IDENTIFICATION_NUMBER = "2u"
+        PAYER_IDENTIFICATION_NUMBER = "2U"
         CLAIM_OFFICE_NUMBER = "FY"
         NAIC_CODE = "NF"
         EMPLOYERS_IDENTIFICATION_NUMBER = "EI"
+        SOCIAL_SECURITY_NUMBER = "SY"
+        STATE_LICENSE_NUMBER = "0B"
+        PROVIDER_UPIN_NUMBER = "1G"
 
     reference_identification_qualifier: ReferenceIdentificationQualifier
 

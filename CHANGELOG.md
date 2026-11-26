@@ -24,6 +24,33 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Fixed
+- **Segments of valid loops were dropped, or opened the wrong loop, without
+  an error.** Each case below now parses and writes back unchanged; no model
+  class or field changes name or type unless stated.
+  - 4010 837P (`004010X098A1`): the responsible party loop 2010BC (`NM1*QD`)
+    and the card holder loop 2010BD (`NM1*AO`) were never routed, because
+    their handlers were not named like the other loop handlers. The other
+    payer supervising provider loop 2330H (`NM1*DQ`) was not routed either.
+  - 4010 837I (`004010X096A1`): loop 2010BD (`NM1*QD`), the service facility
+    qualifiers `77`, `LI` and `TL` in 2310E, and loop 2330H (`NM1*FA`, whose
+    handler also named a constant that does not exist) were not routed. An
+    `NM1*QC` inside an other subscriber loop replaced the dependent's own
+    patient name loop 2010CA and could stop the claim parsing.
+  - 5010 837P and 837D: the pay-to plan loop 2010AC (`REF*2U`, `FY`, `NF`)
+    used the billing provider's REF segment class, which rejected those
+    qualifiers. It now uses its own class, which also keeps the earlier `EI`,
+    `SY`, `0B` and `1G`, so nothing that parsed before is rejected. 5010 837I:
+    2010AC also accepts `REF*EI`. These allowed lists are leniency that could
+    not be checked against the rules in this repository.
+  - 271 5010: a contact segment `PER` after the information source name
+    (loop 2100A) was dropped; `Loop2100A` gains `per_segment`, up to three
+    (the limit of three could not be checked against the rules in this
+    repository). Model dumps of 2100A now include `per_segment: []` when there
+    is no PER.
+  - 834 5010: `NM1*36` inside a coordination of benefits loop 2320 also
+    opened a member employer loop 2100D. It now stays in 2330 only.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added
