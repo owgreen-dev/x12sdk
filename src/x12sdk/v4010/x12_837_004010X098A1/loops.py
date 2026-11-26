@@ -362,7 +362,7 @@ class Loop2320(X12SegmentGroup):
     loop_2330a: Optional[Loop2330A] = None
     loop_2330b: Optional[Loop2330B] = None
     loop_2330c: Optional[List[Loop2330C]] = None
-    loop_2330d: Optional[Loop2330D] = None
+    loop_2330d: Optional[List[Loop2330D]] = None
     loop_2330e: Optional[Loop2330E] = None
     loop_2330f: Optional[Loop2330F] = None
     loop_2330g: Optional[Loop2330G] = None
@@ -551,8 +551,8 @@ class Loop2400(X12SegmentGroup):
     loop_2420c: Optional[Loop2420C] = None
     loop_2420d: Optional[Loop2420D] = None
     loop_2420e: Optional[Loop2420E] = None
-    loop_2420f: Optional[Loop2420F] = None
-    loop_2420g: Optional[Loop2420G] = None
+    loop_2420f: Optional[List[Loop2420F]] = None
+    loop_2420g: Optional[List[Loop2420G]] = None
     loop_2430: Optional[List[Loop2430]] = None
     loop_2440: Optional[List[Loop2440]] = None
 
@@ -587,8 +587,8 @@ class Loop2300(X12SegmentGroup):
     )
     hi_segment: Optional[List[HiSegment]] = Field(None, min_length=1, max_length=4)
     hcp_segment: Optional[HcpSegment] = None
-    loop_2305: Optional[Loop2305] = None
-    loop_2310a: Optional[Loop2310A] = None
+    loop_2305: Optional[List[Loop2305]] = None
+    loop_2310a: Optional[List[Loop2310A]] = None
     loop_2310b: Optional[Loop2310B] = None
     loop_2310c: Optional[Loop2310C] = None
     loop_2310d: Optional[Loop2310D] = None

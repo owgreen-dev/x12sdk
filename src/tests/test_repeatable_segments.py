@@ -88,7 +88,7 @@ def test_4010_home_health_care_plan_loop_is_parsed(relative_path):
     model = _model(relative_path)
     loops = list(_find_loops(model, "loop_2305"))
     assert len(loops) == 1
-    loop_2305 = loops[0]
+    loop_2305 = loops[0][0]
     assert loop_2305.cr7_segment.discipline_type_code == "AI"
     assert [
         (h.quantity_qualifier, h.measurement_code) for h in loop_2305.hsd_segment

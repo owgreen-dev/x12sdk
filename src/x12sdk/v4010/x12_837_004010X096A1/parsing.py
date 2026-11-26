@@ -651,7 +651,8 @@ def set_home_health_care_plan_loop(
     """
     claim = _get_claim(context)
     loop_data = {"hsd_segment": []}
-    claim[TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN] = loop_data
+    # Loop 2305 repeats: one occurrence per CR7 segment
+    claim.setdefault(TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN, []).append(loop_data)
     context.set_loop_context(TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN, loop_data)
 
 

@@ -617,7 +617,7 @@ class Loop2300(X12SegmentGroup):
     )
     hi_segment: Optional[List[HiSegment]] = Field(None, min_length=1, max_length=4)
     hcp_segment: Optional[HcpSegment] = None
-    loop_2310a: Optional[Loop2310A] = None
+    loop_2310a: Optional[List[Loop2310A]] = Field(None, min_length=0, max_length=2)
     loop_2310b: Optional[Loop2310B] = None
     loop_2310c: Optional[Loop2310C] = None
     loop_2310d: Optional[Loop2310D] = None

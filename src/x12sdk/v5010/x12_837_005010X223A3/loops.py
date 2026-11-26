@@ -558,7 +558,7 @@ class Loop2300(X12SegmentGroup):
     loop_2310e: Optional[Loop2310E] = None
     loop_2310f: Optional[Loop2310F] = None
     loop_2320: Optional[List[Loop2320]] = Field(None, min_length=0, max_length=10)
-    loop_2400: List[Loop2400] = Field(min_length=1, max_length=50)
+    loop_2400: List[Loop2400] = Field(min_length=1, max_length=999)
 
     _validate_dtp_qualifiers = model_validator(mode="after")(
         validate_duplicate_date_qualifiers

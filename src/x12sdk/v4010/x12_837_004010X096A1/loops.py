@@ -469,13 +469,13 @@ class Loop2300(X12SegmentGroup):
     hi_segment: Optional[List[HiSegment]] = Field(None, max_length=20)
     qty_segment: Optional[List[Loop2300QtySegment]] = Field(None, max_length=4)
     hcp_segment: Optional[HcpSegment] = None
-    loop_2305: Optional[Loop2305] = None
+    loop_2305: Optional[List[Loop2305]] = None
     loop_2310a: Optional[Loop2310A] = None
     loop_2310b: Optional[Loop2310B] = None
     loop_2310c: Optional[Loop2310C] = None
     loop_2310e: Optional[Loop2310E] = None
     loop_2320: Optional[List[Loop2320]] = Field(None, min_length=0, max_length=10)
-    loop_2400: List[Loop2400] = Field(min_length=1, max_length=50)
+    loop_2400: List[Loop2400] = Field(min_length=1, max_length=999)
 
     _validate_dtp_qualifiers = model_validator(mode="after")(
         validate_duplicate_date_qualifiers

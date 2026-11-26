@@ -427,10 +427,14 @@ def set_claim_entity_loop(context: X12ParserContext, segment_data: Dict) -> None
             )
 
         claim = _get_claim(context)
-        if loop_name not in claim:
-            claim[loop_name] = {"ref_segment": []}
-
-        loop_record = claim[loop_name]
+        if loop_name == TransactionLoops.CLAIM_REFERRING_PROVIDER_NAME:
+            # Loop 2310A repeats: one occurrence per referring provider NM1
+            claim.setdefault(loop_name, []).append({"ref_segment": []})
+            loop_record = claim[loop_name][-1]
+        else:
+            if loop_name not in claim:
+                claim[loop_name] = {"ref_segment": []}
+            loop_record = claim[loop_name]
         context.set_loop_context(loop_name, loop_record)
 
 
@@ -546,14 +550,15 @@ def set_other_subscriber_entities_loop(
             )
 
         other_subscriber = _get_other_subscriber(context)
-        if (
-            loop_name
-            == TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_PATIENT_INFORMATION
+        if loop_name in (
+            TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_PATIENT_INFORMATION,
+            TransactionLoops.CLAIM_OTHER_SUBSCRIBER_OTHER_PAYER_REFERRING_PROVIDER_NAME,
         ):
             # In this 4010 implementation loop 2330C is Other Payer Patient
             # Information, and the model declares it List[Loop2330C]. Assigning
-            # here kept only the last occurrence. The other 2330 loops occur
-            # once and stay dicts.
+            # here kept only the last occurrence. Loop 2330D (referring
+            # provider) repeats the same way. The other 2330 loops occur once
+            # and stay dicts.
             other_subscriber.setdefault(loop_name, []).append({"ref_segment": []})
             context.set_loop_context(loop_name, other_subscriber[loop_name][-1])
         else:
@@ -679,8 +684,16 @@ def set_service_line_entities_loop(
                 f"unable to map identifier {identifier} to a claim entity loop"
             )
         service_line = _get_service_line(context)
-        service_line[loop_name] = {"ref_segment": []}
-        loop_record = service_line[loop_name]
+        if loop_name in (
+            TransactionLoops.CLAIM_SERVICE_LINE_REFERRING_PROVIDER_NAME,
+            TransactionLoops.CLAIM_SERVICE_LINE_OTHER_PAYER_PRIOR_AUTH,
+        ):
+            # Loops 2420F and 2420G repeat: one occurrence per NM1
+            service_line.setdefault(loop_name, []).append({"ref_segment": []})
+            loop_record = service_line[loop_name][-1]
+        else:
+            service_line[loop_name] = {"ref_segment": []}
+            loop_record = service_line[loop_name]
         context.set_loop_context(loop_name, loop_record)
 
 
@@ -753,7 +766,8 @@ def set_home_health_care_plan_loop(
     """
     claim = _get_claim(context)
     loop_data = {"hsd_segment": []}
-    claim[TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN] = loop_data
+    # Loop 2305 repeats: one occurrence per CR7 segment
+    claim.setdefault(TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN, []).append(loop_data)
     context.set_loop_context(TransactionLoops.CLAIM_HOME_HEALTH_CARE_PLAN, loop_data)
 
 

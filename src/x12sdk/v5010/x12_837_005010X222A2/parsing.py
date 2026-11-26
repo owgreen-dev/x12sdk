@@ -366,11 +366,21 @@ def set_claim_entity_loop(context: X12ParserContext, segment_data: Dict) -> None
     """
     if "loop_2300" in context.loop_name or "loop_2310" in context.loop_name:
         identifier = segment_data.get("entity_identifier_code")
-        loop_name = None
+        claim = _get_claim(context)
 
         if identifier in ("DN", "P3"):
-            loop_name = TransactionLoops.CLAIM_REFERRING_PROVIDER_NAME
-        elif identifier == "82":
+            # Loop 2310A repeats (a referring and a primary care provider)
+            referring = claim.setdefault(
+                TransactionLoops.CLAIM_REFERRING_PROVIDER_NAME, []
+            )
+            referring.append({"ref_segment": []})
+            context.set_loop_context(
+                TransactionLoops.CLAIM_REFERRING_PROVIDER_NAME, referring[-1]
+            )
+            return
+
+        loop_name = None
+        if identifier == "82":
             loop_name = TransactionLoops.CLAIM_RENDERING_PROVIDER_NAME
         elif identifier == "77":
             loop_name = TransactionLoops.CLAIM_SERVICE_FACILITY_LOCATION_NAME
@@ -382,7 +392,6 @@ def set_claim_entity_loop(context: X12ParserContext, segment_data: Dict) -> None
                 f"unable to map identifier {identifier} to a claim entity loop"
             )
 
-        claim = _get_claim(context)
         if loop_name not in claim:
             claim[loop_name] = {"ref_segment": []}
 

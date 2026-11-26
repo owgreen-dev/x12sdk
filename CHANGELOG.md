@@ -24,6 +24,36 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Changed — breaking
+Fields the 837 guides let repeat are now lists, so a repeated loop is no longer
+rejected or merged into the first:
+
+| field | before | after |
+|---|---|---|
+| 5010 837P `Loop2300.loop_2310a` | `Optional[Loop2310A]` | `Optional[List[Loop2310A]]` (max 2) |
+| 4010 837P `Loop2300.loop_2305`, `loop_2310a` | `Optional[Loop]` | `Optional[List[Loop]]` |
+| 4010 837P `Loop2320.loop_2330d` | `Optional[Loop2330D]` | `Optional[List[Loop2330D]]` |
+| 4010 837P `Loop2400.loop_2420f`, `loop_2420g` | `Optional[Loop]` | `Optional[List[Loop]]` |
+| 4010 837I `Loop2300.loop_2305` | `Optional[Loop2305]` | `Optional[List[Loop2305]]` |
+
+```python
+# before
+claim.loop_2310a.nm1_segment
+
+# after
+claim.loop_2310a[0].nm1_segment
+```
+
+Code that builds these loops in Python passes a list; a single instance is not
+wrapped. Parsed single occurrences are one-item lists, and the written output
+is unchanged.
+
+### Fixed
+- A claim with two referring providers (837P 2310A, 4010 837P 2310A), a repeated
+  home health care plan (4010 2305), or a repeated 2330D, 2420F or 2420G no
+  longer fails or silently loses the earlier occurrence.
+- 5010 837I and 4010 837I accept up to 999 service lines (the limit was 50).
+
 ## 2.4.0 — 2026-11-22
 
 ### Added
