@@ -24,6 +24,12 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Fixed
+- **837P: a REF in loop 2310D (supervising provider) failed the
+  transaction.** `Loop2310DRefSegment` was built on the name segment instead
+  of the reference segment, so every REF there was rejected. Files with such
+  a REF are accepted now; nothing accepted before changes.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added

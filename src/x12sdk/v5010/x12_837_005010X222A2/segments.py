@@ -958,7 +958,7 @@ class Loop2310DNm1Segment(Nm1Segment):
     identification_code_qualifier: Literal["XX"]
 
 
-class Loop2310DRefSegment(Nm1Segment):
+class Loop2310DRefSegment(RefSegment):
     """
     Claim Supervising Provider Reference Identification
     """
