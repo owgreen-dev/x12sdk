@@ -37,6 +37,12 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
 - **271: an empty NM1 last name or organization name is accepted in loops
   2100A, 2100B and 2100D**, as it already was in 2100C. It failed with a
   `string_type` error before; a value is still limited to 60 characters.
+- **277: segments are no longer dropped while parsing.** Every service line
+  after the first (with its STC and DTP) and the segments after a patient or
+  claim loop without a TRN were lost, which showed only as an SE segment
+  count mismatch. They are now kept and round-trip. `trn_segment` is
+  optional on the 2200D and 2200E loops, so a claim without a TRN is
+  accepted; `trace_number` returns None for it.
 
 ## 2.4.0 — 2026-11-22
 

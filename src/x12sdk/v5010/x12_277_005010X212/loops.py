@@ -86,7 +86,7 @@ class Loop2200E(X12SegmentGroup):
     The segment implementations from the Subscriber loop are used as the structure is the same.
     """
 
-    trn_segment: Loop2200DTrnSegment
+    trn_segment: Optional[Loop2200DTrnSegment] = None
     stc_segment: List[StcSegment]
     ref_segment: Optional[List[Loop2200DRefSegment]] = Field(
         None, min_length=0, max_length=7
@@ -129,7 +129,7 @@ class Loop2200D(X12SegmentGroup):
     Subscriber Claim Status Tracking Number
     """
 
-    trn_segment: Loop2200DTrnSegment
+    trn_segment: Optional[Loop2200DTrnSegment] = None
     stc_segment: List[StcSegment]
     ref_segment: Optional[List[Loop2200DRefSegment]] = Field(
         None, min_length=0, max_length=7

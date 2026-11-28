@@ -256,6 +256,9 @@ def set_subscriber_loop(context: X12ParserContext, segment_data: Dict) -> None:
     # subscriber is patient
     if segment_data.get("hierarchical_child_code", "0") == "0":
         context.patient_record = context.subscriber_record
+    else:
+        # the patient is a dependent not yet opened; drop the previous subscriber's record
+        context.patient_record = None
 
 
 @match("NM1", {"entity_identifier_code": "IL"})
@@ -270,6 +273,40 @@ def set_subscriber_name_loop(context: X12ParserContext, segment_data: Dict) -> N
         context.subscriber_record[TransactionLoops.SUBSCRIBER_NAME] = {}
         loop_record = context.subscriber_record[TransactionLoops.SUBSCRIBER_NAME]
         context.set_loop_context(TransactionLoops.SUBSCRIBER_NAME, loop_record)
+
+
+def _open_claim_status_loop(context: X12ParserContext) -> Dict:
+    """
+    Opens a new claim status loop (2200D or 2200E) for the current patient and makes it the current loop.
+
+    :param context: The X12Parsing context which contains the current loop and transaction record.
+    :return: The new claim status loop record.
+    """
+    if _is_subscriber(context.patient_record):
+        loop_name = TransactionLoops.SUBSCRIBER_CLAIM_STATUS_TRACKING_NUMBER
+    else:
+        loop_name = TransactionLoops.DEPENDENT_CLAIM_STATUS_TRACKING_NUMBER
+
+    if loop_name not in context.patient_record:
+        context.patient_record[loop_name] = []
+
+    context.patient_record[loop_name].append(
+        {
+            "ref_segment": [],
+            "stc_segment": [],
+        }
+    )
+    loop_record = context.patient_record[loop_name][-1]
+    context.set_loop_context(loop_name, loop_record)
+    return loop_record
+
+
+def _is_patient_name_loop(context: X12ParserContext) -> bool:
+    """Returns true if the current loop is the subscriber or dependent name loop, before any claim status loop."""
+    return context.loop_name in (
+        TransactionLoops.SUBSCRIBER_NAME,
+        TransactionLoops.DEPENDENT_NAME,
+    )
 
 
 @match("TRN")
@@ -287,22 +324,30 @@ def set_claim_status_tracking_loop(
     if not current_loop.endswith("d") and not current_loop.endswith("e"):
         return
 
-    if _is_subscriber(context.patient_record):
-        loop_name = TransactionLoops.SUBSCRIBER_CLAIM_STATUS_TRACKING_NUMBER
-    else:
-        loop_name = TransactionLoops.DEPENDENT_CLAIM_STATUS_TRACKING_NUMBER
+    # a subscriber with dependents has no patient record until its dependent loop opens
+    if context.patient_record is None:
+        return
 
-    if loop_name not in context.patient_record:
-        context.patient_record[loop_name] = []
+    _open_claim_status_loop(context)
 
-    context.patient_record[loop_name].append(
-        {
-            "ref_segment": [],
-            "stc_segment": [],
-        }
-    )
-    loop_record = context.patient_record[loop_name][-1]
-    context.set_loop_context(loop_name, loop_record)
+
+@match("STC")
+def set_claim_status_without_tracking_loop(
+    context: X12ParserContext, segment_data: Dict
+) -> None:
+    """
+    Opens the claim status loop when a status segment follows the patient name with no TRN segment.
+    Without it the segment would be written into the name loop, which has no place for it.
+
+    :param context: The X12Parsing context which contains the current loop and transaction record.
+    :param segment_data: The current segment data
+    """
+    # a subscriber with dependents has no patient record until its dependent loop opens
+    if context.patient_record is None:
+        return
+
+    if _is_patient_name_loop(context):
+        _open_claim_status_loop(context)
 
 
 @match("SVC")
@@ -310,10 +355,26 @@ def set_service_line_loop(context: X12ParserContext, segment_data: Dict) -> None
     """
     Sets the service line loop
 
+    Service lines belong to the patient's most recent claim status loop. The current loop container cannot be used
+    as the parent: after the first service line it is that service line's own record.
+
     :param context: The X12Parsing context which contains the current loop and transaction record.
     :param segment_data: The current segment data
     """
-    claim_status = context.loop_container
+    if context.patient_record is None:
+        return
+
+    if _is_patient_name_loop(context):
+        # no TRN or STC segment preceded the service line
+        claim_status = _open_claim_status_loop(context)
+    elif _is_subscriber(context.patient_record):
+        claim_status = context.patient_record[
+            TransactionLoops.SUBSCRIBER_CLAIM_STATUS_TRACKING_NUMBER
+        ][-1]
+    else:
+        claim_status = context.patient_record[
+            TransactionLoops.DEPENDENT_CLAIM_STATUS_TRACKING_NUMBER
+        ][-1]
 
     if _is_subscriber(context.patient_record):
         loop_name = TransactionLoops.SUBSCRIBER_SERVICE_LINE_INFORMATION

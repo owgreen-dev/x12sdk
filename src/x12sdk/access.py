@@ -437,7 +437,8 @@ class TrackedClaim:
     @property
     def trace_number(self) -> Optional[str]:
         """TRN02, which ties an inquiry to the response answering it."""
-        return self.status.trn_segment.reference_identification_1
+        trn = self.status.trn_segment
+        return None if trn is None else trn.reference_identification_1
 
     @property
     def patient_name(self) -> Tuple[Optional[str], Optional[str]]:
