@@ -24,6 +24,17 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   once it is on PyPI, by a workflow authenticated with GitHub OIDC (no stored
   secret). `glama.json` names the maintainer for the Glama directory.
 
+### Fixed
+- **A subscriber loop with HL04 = 1 that carries its own detail segments no
+  longer crashes or loses its place.** The 270, 271 and every 837 parser set
+  the current patient only when HL04 was 0, so such a subscriber raised a raw
+  `TypeError` or `KeyError`, or its detail was attached to an earlier
+  subscriber. The subscriber is now always the current patient until a
+  dependent loop starts. The 837 parsers accept a claim directly under a
+  subscriber who also has dependents, and a subscriber with HL04 = 1 and no
+  dependent; the 270 and 271 still refuse a subscriber with HL04 = 1 and no
+  dependent, with their existing error.
+
 ## 2.4.0 — 2026-11-22
 
 ### Added

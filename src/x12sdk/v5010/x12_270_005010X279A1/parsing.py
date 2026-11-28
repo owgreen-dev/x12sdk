@@ -118,9 +118,10 @@ def set_subscriber_hl_loop(context: X12ParserContext, segment_data: Dict) -> Non
     info_receiver[TransactionLoops.SUBSCRIBER].append({"trn_segment": []})
     context.subscriber_record = info_receiver[TransactionLoops.SUBSCRIBER][-1]
     context.set_loop_context(TransactionLoops.SUBSCRIBER, context.subscriber_record)
-
-    if context.hl_segment.get("hierarchical_child_code", "0") == "0":
-        context.patient_record = context.subscriber_record
+    # Set for every subscriber, whatever HL04 says: a subscriber that has
+    # dependents may still carry its own detail, and a stale or missing record
+    # would send that detail to another loop or fail.
+    context.patient_record = context.subscriber_record
 
 
 @match("NM1")
