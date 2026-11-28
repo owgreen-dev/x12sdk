@@ -243,8 +243,10 @@ def set_subscriber_loop(context: X12ParserContext, segment_data: Dict) -> None:
     context.subscriber_record = billing_provider[TransactionLoops.SUBSCRIBER][-1]
     context.set_loop_context(TransactionLoops.SUBSCRIBER, context.subscriber_record)
 
-    if context.hl_segment.get("hierarchical_child_code", "0") == "0":
-        context.patient_record = context.subscriber_record
+    # The subscriber is the current patient until a dependent loop replaces it,
+    # whatever HL04 says, so detail segments of this subscriber never reach a
+    # record left over from an earlier loop (or a missing one).
+    context.patient_record = context.subscriber_record
 
 
 @match("NM1", conditions={"entity_identifier_code": "IL"})

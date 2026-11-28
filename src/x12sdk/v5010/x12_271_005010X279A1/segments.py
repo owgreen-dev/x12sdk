@@ -129,6 +129,7 @@ class Loop2100ANm1Segment(Nm1Segment):
 
     entity_identifier_code: EntityIdentifierCode
     identification_code_qualifier: IdentificationCodeQualifier
+    name_last_or_organization_name: Optional[str] = Field(None, max_length=60)
 
 
 class Loop2100APerSegment(PerSegment):
@@ -242,6 +243,7 @@ class Loop2100BNm1Segment(Nm1Segment):
 
     entity_identifier_code: EntityIdentifierCode
     identification_code_qualifier: IdentificationCodeQualifier
+    name_last_or_organization_name: Optional[str] = Field(None, max_length=60)
     identification_code: str
 
 
@@ -371,6 +373,7 @@ class Loop2100DNm1Segment(Nm1Segment):
     """
 
     entity_identifier_code: Literal["03"]
+    name_last_or_organization_name: Optional[str] = Field(None, max_length=60)
 
 
 class Loop2100RefSegment(RefSegment):
