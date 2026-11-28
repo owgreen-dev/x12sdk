@@ -25,6 +25,15 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   secret). `glama.json` names the maintainer for the Glama directory.
 
 ### Fixed
+- **A subscriber loop with HL04 = 1 that carries its own detail segments no
+  longer crashes or loses its place.** The 270, 271 and every 837 parser set
+  the current patient only when HL04 was 0, so such a subscriber raised a raw
+  `TypeError` or `KeyError`, or its detail was attached to an earlier
+  subscriber. The subscriber is now always the current patient until a
+  dependent loop starts. The 837 parsers accept a claim directly under a
+  subscriber who also has dependents, and a subscriber with HL04 = 1 and no
+  dependent; the 270 and 271 still refuse a subscriber with HL04 = 1 and no
+  dependent, with their existing error.
 - **271: an empty NM1 last name or organization name is accepted in loops
   2100A, 2100B and 2100D**, as it already was in 2100C. It failed with a
   `string_type` error before; a value is still limited to 60 characters.

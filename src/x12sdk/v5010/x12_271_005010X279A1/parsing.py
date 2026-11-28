@@ -54,10 +54,9 @@ def _get_info_receiver(context) -> Dict:
 
 
 def _is_subscriber_patient(context) -> bool:
-    """Returns true if the current context contains a subscriber that is the patient"""
+    """Returns true if the current hierarchical level is a subscriber, whatever HL04 says"""
     hl_level_code = context.hl_segment.get("hierarchical_level_code")
-    hl_child_code = context.hl_segment.get("hierarchical_child_code")
-    return hl_level_code == SUBSCRIBER_HIERARCHY_LEVEL and hl_child_code == "0"
+    return hl_level_code == SUBSCRIBER_HIERARCHY_LEVEL
 
 
 def _get_eligibility(context) -> Dict:
@@ -187,8 +186,8 @@ def set_subscriber_loop(context: X12ParserContext, segment_data: Dict) -> None:
     context.subscriber_record = info_receiver[TransactionLoops.SUBSCRIBER][-1]
     context.set_loop_context(TransactionLoops.SUBSCRIBER, context.subscriber_record)
 
-    if _is_subscriber_patient(context):
-        context.patient_record = context.subscriber_record
+    # Set for every subscriber: one with HL04 = 1 may still carry its own detail.
+    context.patient_record = context.subscriber_record
 
 
 @match("NM1", conditions={"entity_identifier_code": "IL"})
