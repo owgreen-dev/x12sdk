@@ -34,6 +34,9 @@ release, 0.57.0 (June 2022); entries below describe changes made since.
   subscriber who also has dependents, and a subscriber with HL04 = 1 and no
   dependent; the 270 and 271 still refuse a subscriber with HL04 = 1 and no
   dependent, with their existing error.
+- **271: an empty NM1 last name or organization name is accepted in loops
+  2100A, 2100B and 2100D**, as it already was in 2100C. It failed with a
+  `string_type` error before; a value is still limited to 60 characters.
 
 ## 2.4.0 — 2026-11-22
 
