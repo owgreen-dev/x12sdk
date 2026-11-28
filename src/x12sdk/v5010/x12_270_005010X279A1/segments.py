@@ -501,8 +501,9 @@ class Loop2110EqSegment(EqSegment):
         TRANSITIONAL_NURSERY_CARE = "TN"
         URGENT_CARE = "UC"
 
-    # The nested enum keeps its member names; any other string is accepted too
-    # (see code_tables.ServiceTypeField), and an empty repetition is kept.
+    # The nested enum keeps its member names; any other value of one or two
+    # characters is accepted too (see code_tables.ServiceTypeField), and an
+    # empty repetition is kept.
     service_type_code: List[Union[ServiceTypeCode, str]]
 
     _validate_service_type_code = field_validator("service_type_code")(

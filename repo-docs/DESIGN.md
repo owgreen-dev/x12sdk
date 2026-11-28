@@ -251,7 +251,9 @@ class IeaSegment(X12Segment):
 ```
 
 Code-table fields are expressed as string based enumerations within a X12Segment model. Code tables which are not specific
-to a given transaction set or loop are defined within the `x12.<version>.segments` module. Transaction-specific code tables are
+to a given transaction set or loop are defined within the `x12.<version>.segments` module. Code tables shared across transaction
+sets, where a single definition serves several loops, live in `x12sdk.v5010.code_tables`; the segment classes keep the old
+nested names (for example `EbSegment.ServiceTypeCode`) as aliases to them where the table is shared. Transaction-specific code tables are
 defined within the `x12.<version>.x12_<transaction code>_<version identifier>` module as "overrides".
 
 ```python

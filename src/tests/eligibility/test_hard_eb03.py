@@ -5,7 +5,8 @@ after the code-field loosening.
 EB03 is a repeating element: up to 99 repetitions, each one to two
 characters, separated by the repetition separator (^ in the samples). A code
 missing from the library's own list is accepted when it is one or two
-characters, so the cases here use list members and non-members alike. AAA03
+characters, so the cases here use list members and non-members alike. A
+repetition longer than two characters is malformed and fails the segment. AAA03
 is two characters and AAA04 one.
 
 Cases whose correct outcome is a design decision are named
@@ -118,26 +119,85 @@ def test_eb03_long_list_followed_by_a_later_element():
 # EB03: the two design decisions
 
 
-@pytest.mark.parametrize("value", ["UCMB", "ZZZ", "A8B"])
-def test_eb03_longer_than_two_characters_is_accepted(value):
-    """
-    Operator decision: any non-empty string is accepted as a service type
-    code. A value such as UCMB is kept as written and serializes back byte for
-    byte (value types are tested separately below).
-    """
+@pytest.mark.parametrize("value", ["1", "9", "ZZ", "Q", "9Z", "30", "A8"])
+def test_eb03_boundary_one_and_two_characters_are_accepted(value):
+    """Positive control for the length rule: the same shape with 1 or 2 characters."""
     model = round_trips([f"EB*1**{value}"])
     assert plain(eb03_of(model)) == [value]
 
 
-def test_eb03_longer_than_two_characters_inside_a_repetition_list():
-    model = round_trips(["EB*1**30^UCMB^ZZ^ABCDEF^33"])
-    assert plain(eb03_of(model)) == ["30", "UCMB", "ZZ", "ABCDEF", "33"]
+@pytest.mark.parametrize(
+    "value", ["UCMB", "ZZZ", "A8B", "ABC", "1234", "30X", "300", "ABCDEF"]
+)
+def test_eb03_longer_than_two_characters_is_rejected(value):
+    """
+    A service type code is one or two characters, so a longer value is
+    malformed, not just missing from the library's list.
+    """
+    text, _ = build([f"EB*1**{value}"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+@pytest.mark.parametrize("value", ["30X", "A8Z", "ZZZ"])
+def test_eb03_known_code_with_a_suffix_is_rejected(value):
+    text, _ = build([f"EB*1**{value}"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+def test_eb03_two_character_control_for_the_suffix_case_is_accepted():
+    """Same body as the suffix test with the suffix removed: accepted."""
+    for value in ["30", "A8", "ZZ"]:
+        text, _ = build([f"EB*1**{value}"])
+        assert len(parse(text)) == 1
 
 
 @pytest.mark.parametrize(
     "value",
-    ["30^", "2^^30", "^30", "30^^33", "UCMB^^30"],
-    ids=["end", "middle", "start", "middle_two", "middle_long"],
+    ["ABC^30^33", "30^ABC^33", "30^33^ABC"],
+    ids=["first", "middle", "last"],
+)
+def test_eb03_longer_value_in_any_repetition_fails_the_segment(value):
+    text, _ = build([f"EB*1**{value}"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["ZZ^30^33", "30^ZZ^33", "30^33^ZZ"],
+    ids=["first", "middle", "last"],
+)
+def test_eb03_two_character_value_in_any_repetition_is_accepted(value):
+    """Positive control for the position tests: the same lists with 2 characters."""
+    model = round_trips([f"EB*1**{value}"])
+    assert plain(eb03_of(model)) == value.split("^")
+
+
+def test_eb03_long_value_among_empty_repetitions_is_rejected():
+    text, _ = build(["EB*1**30^^UCMB"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+def test_eb03_rejection_is_a_pydantic_validation_error_naming_the_field():
+    text, _ = build(["EB*1**30^UCMB^33"])
+    with pytest.raises(ValidationError) as caught:
+        parse(text)
+    assert isinstance(caught.value, ValidationError)
+    locs = [d["loc"] for d in caught.value.errors()]
+    assert any(loc[-2:] == ("eb_segment", "service_type_code") for loc in locs)
+
+
+def test_eb03_two_character_control_for_the_field_naming_test():
+    assert plain(eb03_of(round_trips(["EB*1**30^UC^33"]))) == ["30", "UC", "33"]
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["30^", "2^^30", "^30", "30^^33", "UC^^30"],
+    ids=["end", "middle", "start", "middle_two", "middle_known"],
 )
 def test_eb03_empty_repetition_keeps_the_file_intact(value):
     """
@@ -214,9 +274,9 @@ def test_eb03_known_code_is_a_plain_str(code):
 
 
 def test_eb03_known_codes_in_a_repetition_are_plain_str():
-    values = eb03_raw("EB*1**30^A8^ZZZ")
+    values = eb03_raw("EB*1**30^A8^ZZ")
     assert [type(v) for v in values] == [str, str, str]
-    assert values == ["30", "A8", "ZZZ"]
+    assert values == ["30", "A8", "ZZ"]
 
 
 def test_eb03_known_code_equals_the_shared_enum_value():
@@ -225,7 +285,7 @@ def test_eb03_known_code_equals_the_shared_enum_value():
     assert value == ServiceTypeCode("30").value
 
 
-@pytest.mark.parametrize("code", ["ZZ", "Q", "UCMB"])
+@pytest.mark.parametrize("code", ["ZZ", "Q", "9Z"])
 def test_eb03_unknown_value_stays_a_plain_str(code):
     (value,) = eb03_raw(f"EB*1**{code}")
     assert type(value) is str and value == code
@@ -237,7 +297,7 @@ def test_eb03_empty_member_stays_an_empty_str():
     assert first == "30" and third == "A8"
 
 
-@pytest.mark.parametrize("code", ["30", "A8", "ZZ", "UCMB"])
+@pytest.mark.parametrize("code", ["30", "A8", "ZZ", "Q"])
 def test_service_type_codes_helper_returns_plain_code_text(code):
     """
     The access helper that lists a member's service type codes returns the

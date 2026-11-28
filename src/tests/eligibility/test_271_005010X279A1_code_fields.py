@@ -1,5 +1,5 @@
 """
-271 005010X279A1: AAA03, AAA04 and EB03 accept any well-formed code, whatever the loop.
+271 005010X279A1: AAA03, AAA04 and EB03 accept any well-formed code (EB03: one or two characters), whatever the loop.
 
 Every input is built inline from invented values.
 """
@@ -126,8 +126,9 @@ def test_eb03_empty_is_rejected():
 
 
 @pytest.mark.parametrize("code", ["A8Z", "300"])
-def test_eb03_longer_than_two_characters_is_accepted_and_unchanged(code):
-    assert_round_trip(build_271("2110C-EB", f"EB*1**{code}"))
+def test_eb03_longer_than_two_characters_is_rejected(code):
+    with pytest.raises(ValidationError):
+        parse(build_271("2110C-EB", f"EB*1**{code}"))
 
 
 # EB03 repetitions use the repetition separator declared in ISA11 (`^` here).
@@ -206,10 +207,9 @@ def test_dependent_2110d_eb03_empty_is_rejected():
 
 
 @pytest.mark.parametrize("code", ["A8Z"])
-def test_dependent_2110d_eb03_longer_than_two_characters_is_accepted_and_unchanged(
-    code,
-):
-    assert_round_trip(build_271_dependent(f"EB*1**{code}"))
+def test_dependent_2110d_eb03_longer_than_two_characters_is_rejected(code):
+    with pytest.raises(ValidationError):
+        parse(build_271_dependent(f"EB*1**{code}"))
 
 
 @pytest.mark.parametrize("code", ["33", "72", "73", "ZZ"])

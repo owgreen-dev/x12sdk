@@ -1,8 +1,9 @@
 """
 270 005010X279A1: EQ01 (service type code), a repeating element like the 271
-EB03. Same decision as EB03: any non-empty string is accepted, known codes
-come back as their text, repetitions and an empty repetition do not fail the
-transaction, and the file serializes back byte for byte.
+EB03. Same rule as EB03: a known code or any other one or two character
+string is accepted, a repetition longer than two characters fails the segment,
+known codes come back as their text, repetitions and an empty repetition do not
+fail the transaction, and the file serializes back byte for byte.
 
 The 271 file also defines a Loop2110EqSegment with an enum-only
 service_type_code, but no 271 loop imports or uses it, so no 271 input can
@@ -78,13 +79,72 @@ def test_eq01_repetition_with_a_code_outside_the_library_list():
     assert eq01_of(round_trips(["EQ*30^ZZ"])) == ["30", "ZZ"]
 
 
-@pytest.mark.parametrize("value", ["UCMB", "ZZZ"])
-def test_eq01_longer_than_two_characters_is_accepted(value):
+@pytest.mark.parametrize("value", ["1", "9", "ZZ", "Q", "9Z", "30", "A8"])
+def test_eq01_boundary_one_and_two_characters_are_accepted(value):
+    """Positive control for the length rule: the same shape with 1 or 2 characters."""
     assert eq01_of(round_trips([f"EQ*{value}"])) == [value]
 
 
-def test_eq01_longer_than_two_characters_inside_a_repetition_list():
-    assert eq01_of(round_trips(["EQ*30^UCMB^ZZ"])) == ["30", "UCMB", "ZZ"]
+@pytest.mark.parametrize(
+    "value", ["UCMB", "ZZZ", "A8B", "ABC", "1234", "30X", "300", "ABCDEF"]
+)
+def test_eq01_longer_than_two_characters_is_rejected(value):
+    text, _ = build([f"EQ*{value}"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+@pytest.mark.parametrize("value", ["30X", "A8Z", "ZZZ"])
+def test_eq01_known_code_with_a_suffix_is_rejected(value):
+    text, _ = build([f"EQ*{value}"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+def test_eq01_two_character_control_for_the_suffix_case_is_accepted():
+    for value in ["30", "A8", "ZZ"]:
+        text, _ = build([f"EQ*{value}"])
+        assert len(parse(text)) == 1
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["ABC^30^33", "30^ABC^33", "30^33^ABC"],
+    ids=["first", "middle", "last"],
+)
+def test_eq01_longer_value_in_any_repetition_fails_the_segment(value):
+    text, _ = build([f"EQ*{value}"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["ZZ^30^33", "30^ZZ^33", "30^33^ZZ"],
+    ids=["first", "middle", "last"],
+)
+def test_eq01_two_character_value_in_any_repetition_is_accepted(value):
+    """Positive control for the position tests: the same lists with 2 characters."""
+    assert eq01_of(round_trips([f"EQ*{value}"])) == value.split("^")
+
+
+def test_eq01_long_value_among_empty_repetitions_is_rejected():
+    text, _ = build(["EQ*30^^UCMB"])
+    with pytest.raises(ValidationError):
+        parse(text)
+
+
+def test_eq01_rejection_is_a_pydantic_validation_error_naming_the_field():
+    text, _ = build(["EQ*30^UCMB^33"])
+    with pytest.raises(ValidationError) as caught:
+        parse(text)
+    assert isinstance(caught.value, ValidationError)
+    locs = [d["loc"] for d in caught.value.errors()]
+    assert any(loc[-2:] == ("eq_segment", "service_type_code") for loc in locs)
+
+
+def test_eq01_two_character_control_for_the_field_naming_test():
+    assert eq01_of(round_trips(["EQ*30^UC^33"])) == ["30", "UC", "33"]
 
 
 @pytest.mark.parametrize("count", [36, 99])
@@ -126,9 +186,9 @@ def test_eq01_known_code_is_a_plain_str(code):
 
 
 def test_eq01_known_codes_in_a_repetition_are_plain_str():
-    values = eq01_raw("EQ*30^A8^ZZZ")
+    values = eq01_raw("EQ*30^A8^ZZ")
     assert [type(v) for v in values] == [str, str, str]
-    assert values == ["30", "A8", "ZZZ"]
+    assert values == ["30", "A8", "ZZ"]
 
 
 def test_eq01_known_code_equals_the_enum_value():
@@ -137,7 +197,7 @@ def test_eq01_known_code_equals_the_enum_value():
     assert value == Loop2110EqSegment.ServiceTypeCode("30").value
 
 
-@pytest.mark.parametrize("code", ["ZZ", "Q", "UCMB"])
+@pytest.mark.parametrize("code", ["ZZ", "Q", "9Z"])
 def test_eq01_unknown_value_stays_a_plain_str(code):
     (value,) = eq01_raw(f"EQ*{code}")
     assert type(value) is str and value == code
@@ -149,7 +209,7 @@ def test_eq01_empty_member_stays_an_empty_str():
     assert first == "30" and third == "A8"
 
 
-@pytest.mark.parametrize("code", ["30", "A8", "ZZ", "UCMB"])
+@pytest.mark.parametrize("code", ["30", "A8", "ZZ", "Q"])
 def test_service_type_codes_helper_returns_plain_code_text_for_an_inquiry(code):
     text, _ = build([f"EQ*{code}"])
     member = next(iter(parse(text)[0].members()))

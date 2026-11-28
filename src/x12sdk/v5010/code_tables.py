@@ -278,12 +278,12 @@ RejectReasonField = Union[
 FollowUpActionField = Union[
     FollowUpActionCode, Annotated[str, Field(min_length=1, max_length=1)]
 ]
-# The service type code (EB03 on a response, EQ01 on an inquiry) accepts any
-# string, so the repetitions it carries round-trip as written. An empty
-# repetition is kept as an empty member; check_service_type_codes rejects an
-# element that is empty throughout.
-
-
+# The service type code (EB03 on a response, EQ01 on an inquiry) is one or two
+# characters. Each repetition is a known code, any other value of one or two
+# characters, or empty: an empty repetition is kept as an empty member so the
+# element round-trips as written. The length bound and the rule that an element
+# may not be empty throughout are applied to the whole element by
+# check_service_type_codes, so a rejection names the field itself.
 ServiceTypeField = Union[ServiceTypeCode, str]
 
 
@@ -291,8 +291,15 @@ def check_service_type_codes(
     values: Optional[List[Union[Enum, str]]],
 ) -> Optional[List[Union[Enum, str]]]:
     """
-    Reject a service type code element in which every repetition is empty.
+    Reject a service type code element in which a repetition is longer than two
+    characters, or in which every repetition is empty.
     """
-    if values is not None and not any(values):
+    if values is None:
+        return values
+    for value in values:
+        text = value.value if isinstance(value, Enum) else value
+        if len(text) > 2:
+            raise ValueError("service type code must be one or two characters")
+    if not any(values):
         raise ValueError("service type code must have at least one value")
     return values
